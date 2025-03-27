@@ -2,7 +2,7 @@ const express = require('express');
 
 const app = express();
 app.use(express.static('src'));
-const PORT = 3000;
+const PORT = 80;
 
 app.listen(PORT, (error) =>{
     if(!error)

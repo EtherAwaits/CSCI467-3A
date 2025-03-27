@@ -1,15 +1,15 @@
 {
   "dependencies": {
-    "@tailwindcss/cli": "^4.0.1",
+    "@tailwindcss/cli": "^4.0.17",
     "@tailwindcss/postcss": "^4.0.1",
     "express": "^4.21.2",
     "postcss": "^8.5.1",
-    "tailwindcss": "^4.0.1"
+    "tailwindcss": "^4.0.17"
   },
   "scripts": {
     "dev": "npx tailwindcss -i ./src/input.css -o ./src/output.css --watch --minify"
   },
   "devDependencies": {
-    "daisyui": "^4.12.23"
+    "daisyui": "^5.0.9"
   }
 }
