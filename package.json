@@ -2,12 +2,15 @@
   "dependencies": {
     "@tailwindcss/cli": "^4.0.1",
     "@tailwindcss/postcss": "^4.0.1",
+    "dotenv": "^16.4.7",
     "express": "^4.21.2",
+    "mysql": "^2.18.1",
     "postcss": "^8.5.1",
     "tailwindcss": "^4.0.1"
   },
   "scripts": {
-    "dev": "npx tailwindcss -i ./src/input.css -o ./src/output.css --watch --minify"
+    "dev": "npx tailwindcss -i ./src/input.css -o ./src/output.css --watch --minify",
+    "schema": "node schema.js"
   },
   "devDependencies": {
     "daisyui": "^4.12.23"
