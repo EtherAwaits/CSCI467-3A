@@ -6,11 +6,16 @@ const { con } = require("./db.js");
 // TODO: Define the schema here, one SQL statement per string
 const SQL_CODE = [
   `
-DROP TABLE IF EXISTS Example;
+DROP TABLE IF EXISTS Inventory;
 `,
   `
-CREATE TABLE Example (
-    PrimKey INT AUTO_INCREMENT PRIMARY KEY
+CREATE TABLE Inventory (PartNumber int NOT NULL, description varchar(50) NOT NULL, price float(8,2) NOT NULL,
+    weight float (4,2) NOT NULL, pictureURL varchar (50), count int NOT NULL, on_order int, PRIMARY KEY (PartNumber));
+`, `
+
+INSERT INTO Inventory (PartNumber, description, price, weight, pictureURL, 0, 0)
+SELECT PartNumber, description, price, weight, pictureURL
+FROM csci467;
 );
 `,
 ];
