@@ -17,8 +17,9 @@ document.addEventListener("DOMContentLoaded", () => {
         switch (tabName) {
             case "home":
                 display.innerHTML = `
-                    This is where the home page goes.
-                `;
+                    <h1 class="font-bold text-3xl text-center">Welcome to Ege Auto Parts!</h1>
+                
+                    `;
             break;
             case "products":
                 display.innerHTML = `
