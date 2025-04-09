@@ -1,4 +1,5 @@
 {
+  "name": "csci467",
   "dependencies": {
     "@tailwindcss/cli": "^4.0.17",
     "@tailwindcss/postcss": "^4.0.1",
