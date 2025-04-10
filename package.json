@@ -7,11 +7,11 @@
     "express": "^4.21.2",
     "mysql": "^2.18.1",
     "postcss": "^8.5.1",
+    "sqlstring": "^2.3.3",
     "tailwindcss": "^4.0.17"
   },
   "scripts": {
-    "dev": "npx tailwindcss -i ./src/input.css -o ./src/output.css --watch --minify",
-    "schema": "node schema.js"
+    "dev": "npx tailwindcss -i ./src/input.css -o ./src/output.css --watch --minify"
   },
   "devDependencies": {
     "daisyui": "^5.0.9"
