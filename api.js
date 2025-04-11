@@ -1,6 +1,6 @@
 const mysql = require("mysql");
 const SqlString = require("sqlstring");
-const { LEGACY_DB_INFO } = require("./dbconsts.js");
+const { LEGACY_DB_INFO, OUR_DB_URL } = require("./dbconsts.js");
 
 //
 // Utility Functions
@@ -12,12 +12,8 @@ const asyncHandler = (func) => (req, res, next) => {
   Promise.resolve(func(req, res, next)).catch(next);
 };
 
-const make_query = (connectionInfo, sqlQuery) =>
+const make_query_with_con = (con, sqlQuery) =>
   new Promise((resolve, reject) => {
-    const con = mysql.createConnection(connectionInfo);
-
-    con.connect();
-
     con.query(sqlQuery, (err, result) => {
       if (!err) {
         resolve(result);
@@ -25,6 +21,17 @@ const make_query = (connectionInfo, sqlQuery) =>
         reject(err);
       }
     });
+  });
+
+const make_query = (connectionInfo, sqlQuery) =>
+  new Promise((resolve, reject) => {
+    const con = mysql.createConnection(connectionInfo);
+
+    con.connect();
+
+    make_query_with_con(con, sqlQuery)
+      .then((result) => resolve(result))
+      .catch((err) => reject(err));
 
     con.end();
   });
@@ -51,6 +58,7 @@ const initAPI = (app) => {
   app.get(
     "/api/parts",
     asyncHandler(async (req, res) => {
+      const partsWithQuantity = [];
       let query = "SELECT * FROM parts";
 
       if (req?.query?.search) {
@@ -60,10 +68,56 @@ const initAPI = (app) => {
         query += ` WHERE description LIKE '%${cleanedSearch}%'`;
       }
 
-      const result = await make_query(LEGACY_DB_INFO, query);
+      try {
+        const parts = await make_query(LEGACY_DB_INFO, query);
 
-      res.status(result ? 200 : 400);
-      res.json({ result });
+        let insertStr = "";
+        let queryStr = "(";
+
+        parts.forEach((part, i) => {
+          if (i < parts.length - 1) {
+            insertStr += "(" + part.number + "),";
+            queryStr += part.number + ",";
+          } else {
+            insertStr += "(" + part.number + ");";
+            queryStr += part.number + ");";
+          }
+        });
+
+        const our_db_con = mysql.createConnection(OUR_DB_URL);
+        our_db_con.connect();
+
+        // If we don't have quantities for any of the parts we found,
+        // we should create them. This ensures that our database
+        // remains in sync with the legacy database.
+        await make_query_with_con(
+          our_db_con,
+          `INSERT IGNORE INTO part_quantities (part_id) VALUES ${insertStr}`
+        );
+
+        // Retrieve all of the part quantities for the parts that
+        // we retrieved from the legacy database.
+        const quantities = await make_query_with_con(
+          our_db_con,
+          `SELECT * FROM part_quantities WHERE part_id IN ${queryStr}`
+        );
+
+        // Merges the parts with the quantities.
+        // Slightly inefficient because O(n^2), but this method guarantees success.
+        const partsWithQuantities = parts.map((part) => ({
+          ...part,
+          quantity: quantities.find((quant) => quant.part_id === part.number)
+            .quantity,
+        }));
+
+        our_db_con.end();
+
+        res.status(200);
+        res.json(partsWithQuantities);
+      } catch (error) {
+        res.status(400);
+        res.json({ error });
+      }
     })
   );
 

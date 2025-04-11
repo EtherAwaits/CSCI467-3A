@@ -1,9 +1,9 @@
 DROP TABLE IF EXISTS weight_brackets;
 DROP TABLE IF EXISTS ordered_items;
 DROP TABLE IF EXISTS orders;
-DROP TABLE IF EXISTS part_quantites;
+DROP TABLE IF EXISTS part_quantities;
 
-CREATE TABLE part_quantites (
+CREATE TABLE part_quantities (
     part_id INT PRIMARY KEY,
     quantity INT NOT NULL DEFAULT 0
 );
@@ -26,7 +26,7 @@ CREATE TABLE ordered_items (
     price DECIMAL (10,2) NOT NULL,
 
     FOREIGN KEY (order_id) REFERENCES orders (order_id),
-    FOREIGN KEY (part_id) REFERENCES part_quantites (part_id),
+    FOREIGN KEY (part_id) REFERENCES part_quantities (part_id),
     PRIMARY KEY (order_id, part_id)
 );
 
