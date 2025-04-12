@@ -7,7 +7,8 @@ const express = require("express");
 
 const app = express();
 app.use(express.static("src"));
-const PORT = 80;
+app.use(express.json());
+const PORT = 3000;
 
 // Include API routes
 require("./api.js")(app);

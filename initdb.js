@@ -2,7 +2,7 @@
 // Its sole purpose is to push the database schema to the database.
 
 const fs = require("fs");
-const { OUR_DB_URL } = require("./dbconsts.js");
+const { OUR_DB_URL } = require("./db.js");
 const mysql = require("mysql");
 
 const con = mysql.createConnection(OUR_DB_URL);

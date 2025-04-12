@@ -8,7 +8,8 @@
     "mysql": "^2.18.1",
     "postcss": "^8.5.1",
     "sqlstring": "^2.3.3",
-    "tailwindcss": "^4.0.17"
+    "tailwindcss": "^4.0.17",
+    "uuid": "^11.1.0"
   },
   "scripts": {
     "dev": "npx tailwindcss -i ./src/input.css -o ./src/output.css --watch --minify"

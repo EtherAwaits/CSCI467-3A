@@ -9,18 +9,18 @@ CREATE TABLE part_quantities (
 );
 
 CREATE TABLE orders (
-    order_iD INT AUTO_INCREMENT PRIMARY KEY,
-    is_completed BOOLEAN NOT NULL,
-    shipping_price DECIMAL(10,2) NOT NULL,
+    order_id VARCHAR(200) PRIMARY KEY,
+    is_completed BOOLEAN NOT NULL DEFAULT 0,
     customer_name VARCHAR(200) NOT NULL,
-    mailing_address VARCHAR(200) NOT NULL,
     email VARCHAR(200) NOT NULL,
+    mailing_address VARCHAR(200) NOT NULL,
+    shipping_price DECIMAL(10,2) NOT NULL,
     date_placed DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
     date_completed DATETIME
 );
 
 CREATE TABLE ordered_items (
-    order_id INT NOT NULL,
+    order_id VARCHAR(200) NOT NULL,
     part_id INT NOT NULL,
     quantity INT NOT NULL,
     price DECIMAL (10,2) NOT NULL,

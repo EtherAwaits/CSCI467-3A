@@ -1,6 +1,13 @@
 const mysql = require("mysql");
 const SqlString = require("sqlstring");
-const { LEGACY_DB_INFO, OUR_DB_URL } = require("./dbconsts.js");
+const uuid = require("uuid");
+
+const {
+  LEGACY_DB_INFO,
+  OUR_DB_URL,
+  make_query,
+  make_query_with_con,
+} = require("./db.js");
 
 //
 // Utility Functions
@@ -11,30 +18,6 @@ const { LEGACY_DB_INFO, OUR_DB_URL } = require("./dbconsts.js");
 const asyncHandler = (func) => (req, res, next) => {
   Promise.resolve(func(req, res, next)).catch(next);
 };
-
-const make_query_with_con = (con, sqlQuery) =>
-  new Promise((resolve, reject) => {
-    con.query(sqlQuery, (err, result) => {
-      if (!err) {
-        resolve(result);
-      } else {
-        reject(err);
-      }
-    });
-  });
-
-const make_query = (connectionInfo, sqlQuery) =>
-  new Promise((resolve, reject) => {
-    const con = mysql.createConnection(connectionInfo);
-
-    con.connect();
-
-    make_query_with_con(con, sqlQuery)
-      .then((result) => resolve(result))
-      .catch((err) => reject(err));
-
-    con.end();
-  });
 
 //
 // Specific Query Functions
@@ -58,7 +41,6 @@ const initAPI = (app) => {
   app.get(
     "/api/parts",
     asyncHandler(async (req, res) => {
-      const partsWithQuantity = [];
       let query = "SELECT * FROM parts";
 
       if (req?.query?.search) {
@@ -115,17 +97,154 @@ const initAPI = (app) => {
         res.status(200);
         res.json(partsWithQuantities);
       } catch (error) {
-        res.status(400);
+        res.status(500);
         res.json({ error });
       }
     })
   );
 
   // POST /api/checkout
-  // Takes in a JSON array of parts and their quantities.
-  // Attempts to authorize a purchase. If successful,
-  // adds the order to our database. If unsuccessful,
-  // returns an error message.
+  // Takes in credit card info along with a JSON array of
+  // parts and their quantities.
+  // Attempts to authorize a purchase.
+  // If successful, adds the order to our database.
+  // If unsuccessful, returns an error message.
+  //
+  // Here's an example of the JSON format that this route expects:
+  // {
+  //    'cc' => '6011 1234 4321 1234',
+  //    'name' => 'John Doe',
+  //    'exp' => '12/2024',
+  //    items: [
+  //      {
+  //         part_id: 4,
+  //         quantity: 1
+  //      },
+  //      {
+  //         part_id: 7,
+  //         quantity: 4
+  //      }
+  //    ]
+  // }
+  app.post(
+    "/api/checkout",
+    asyncHandler(async (req, res) => {
+      const { name, email, address, cc, exp, items } = req.body;
+      const transactionID = uuid.v4();
+      let orderedItemsStr = "";
+      let price = 0;
+
+      for (const parm of [name, email, address, cc, exp]) {
+        if (!parm || typeof parm !== "string") {
+          res.status(400);
+          res.json({
+            error: "Missing parameter(s)",
+          });
+          return;
+        }
+      }
+
+      if (!Array.isArray(items) || items.length < 1) {
+        res.status(400);
+        res.json({
+          error: "Must provide a nonempty list of line items",
+        });
+        return;
+      }
+
+      for (const item of items) {
+        if (
+          typeof item?.part_id !== "number" ||
+          typeof item?.quantity !== "number" ||
+          item.quantity < 1
+        ) {
+          res.status(400);
+          res.json({
+            error: "At least one line item has an invalid format",
+          });
+          return;
+        }
+
+        try {
+          const currPrice = await make_query(
+            LEGACY_DB_INFO,
+            `SELECT price FROM parts WHERE number = ${item.part_id}`
+          );
+
+          const currStockQuery = await make_query(
+            OUR_DB_URL,
+            `SELECT * FROM part_quantities WHERE part_id = ${item.part_id}`
+          );
+
+          const currStock = currStockQuery[0]?.quantity;
+
+          console.log(currStock);
+
+          if (typeof currStock !== "number") throw new Error();
+
+          price += currPrice[0].price * item.quantity;
+
+          orderedItemsStr +=
+            `('${transactionID}','${item.part_id}',` +
+            `'${item.quantity}','${currPrice[0].price}'),`;
+        } catch (error) {
+          res.status(400);
+          res.json({
+            error: "Could not find at least one specified part",
+          });
+          return;
+        }
+      }
+
+      const finalItemsStr =
+        orderedItemsStr.slice(0, orderedItemsStr.length - 1) + ";";
+
+      try {
+        const authResponse = await fetch(
+          "http://blitz.cs.niu.edu/CreditCard/",
+          {
+            method: "POST",
+            headers: {
+              Accept: "application/json",
+              "Content-Type": "application/json",
+            },
+            body: JSON.stringify({
+              vendor: "Auto Parts",
+              trans: transactionID,
+              cc,
+              name,
+              exp,
+              amount: price,
+            }),
+          }
+        );
+
+        const authResult = await authResponse.json();
+
+        await make_query(
+          OUR_DB_URL,
+          "INSERT INTO orders (order_id,customer_name,email,mailing_address,shipping_price) VALUES" +
+            `('${transactionID}','${name}','${email}','${address}',${0})`
+        );
+
+        await make_query(
+          OUR_DB_URL,
+          `INSERT INTO ordered_items (order_id,part_id,quantity,price) VALUES ${finalItemsStr}`
+        );
+
+        res.status(200);
+        res.json({
+          result: authResult,
+        });
+      } catch (error) {
+        res.status(400);
+        res.json({
+          error,
+        });
+        return;
+      }
+    })
+  );
 
   //
   // WAREHOUSE WORKER INTERFACE
