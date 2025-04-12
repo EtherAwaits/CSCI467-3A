@@ -1,14 +1,9 @@
 const express = require("express");
-
-// Once we start writing URL endpoint handlers,
-// we'll need to use con to interface with the db.
-// See schema.js for an example.
-// const { our_db_con, legacy_con, make_query } = require("./dbconsts.js");
+const { PORT } = require("./config.js");
 
 const app = express();
 app.use(express.static("src"));
 app.use(express.json());
-const PORT = 3000;
 
 // Include API routes
 require("./api.js")(app);

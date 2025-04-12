@@ -11,8 +11,7 @@ const {
 
 //
 // Utility Functions
-// Serve the purpose of making queries and
-// response handling easier.
+// Serves the purpose of making response handling easier.
 //
 
 const asyncHandler = (func) => (req, res, next) => {
@@ -20,13 +19,8 @@ const asyncHandler = (func) => (req, res, next) => {
 };
 
 //
-// Specific Query Functions
-// Any SQL queries that are reused go here
-//
-
-//
 // Endpoints
-// The initAPI function declares all of the API endpoints
+// The initAPI function declares all of the API endpoints.
 //
 
 const initAPI = (app) => {
@@ -38,6 +32,9 @@ const initAPI = (app) => {
   // Returns a list of the parts from the legacy database.
   // A "?search=" parameter may be added to query for
   // specific parts.
+  // This endpoint also syncs our database with the
+  // legacy database, ensuring that we have a quantity
+  // for each part that was found in the legacy db.
   app.get(
     "/api/parts",
     asyncHandler(async (req, res) => {
@@ -110,22 +107,7 @@ const initAPI = (app) => {
   // If successful, adds the order to our database.
   // If unsuccessful, returns an error message.
   //
-  // Here's an example of the JSON format that this route expects:
-  // {
-  //    'cc' => '6011 1234 4321 1234',
-  //    'name' => 'John Doe',
-  //    'exp' => '12/2024',
-  //    items: [
-  //      {
-  //         part_id: 4,
-  //         quantity: 1
-  //      },
-  //      {
-  //         part_id: 7,
-  //         quantity: 4
-  //      }
-  //    ]
-  // }
+  // See tests/checkout.js for an example.
   app.post(
     "/api/checkout",
     asyncHandler(async (req, res) => {
@@ -147,7 +129,7 @@ const initAPI = (app) => {
       if (!Array.isArray(items) || items.length < 1) {
         res.status(400);
         res.json({
-          error: "Must provide a nonempty list of line items",
+          error: "Must provide a nonempty list of items",
         });
         return;
       }
@@ -176,10 +158,12 @@ const initAPI = (app) => {
             `SELECT * FROM part_quantities WHERE part_id = ${item.part_id}`
           );
 
+          // TODO: Eventually validate to ensure that we have enough in stock?
+          // I'm not sure that we actually want to check that, though.
+          // In the use case diagram, I wrote that the quantity only gets
+          // decreased when the warehouse worker ships something, rather
+          // than when the customer makes a purchase.
           const currStock = currStockQuery[0]?.quantity;
-
-          console.log(currStock);
-
           if (typeof currStock !== "number") throw new Error();
 
           price += currPrice[0].price * item.quantity;
@@ -223,14 +207,17 @@ const initAPI = (app) => {
 
         await make_query(
           OUR_DB_URL,
-          "INSERT INTO orders (order_id,customer_name,email,mailing_address,shipping_price) VALUES" +
-            `('${transactionID}','${name}','${email}','${address}',${0})`
+          "INSERT INTO orders (order_id,customer_name,email,mailing_address,authorization_number,shipping_price) VALUES" +
+            `('${transactionID}','${name}','${email}','${address}',` +
+            `'${authResult.authorization}',${0})`
         );
 
         await make_query(
           OUR_DB_URL,
           `INSERT INTO ordered_items (order_id,part_id,quantity,price) VALUES ${finalItemsStr}`
         );
+
+        // TODO: Email the customer that their order succeeded?
 
         res.status(200);
         res.json({
@@ -252,12 +239,51 @@ const initAPI = (app) => {
 
   // GET /api/orders/authorized
   // Returns only the orders that have a status of "Authorized".
+  app.get(
+    "/api/orders/authorized",
+    asyncHandler(async (_, res) => {
+      try {
+        const dbQuery = await make_query(
+          OUR_DB_URL,
+          "SELECT * FROM orders WHERE is_complete = 0"
+        );
+
+        res.status(200);
+        res.json(dbQuery);
+      } catch (error) {
+        res.status(400);
+        res.json({ error });
+      }
+    })
+  );
 
   // GET /api/orders/[orderID]/invoice
   // Returns an invoice (PDF?) detailing the price that the customer paid
 
   // GET /api/orders/[orderID]/packing-list
   // Returns a list (PDF?) of the items in the order.
+
+  // POST /api/orders/[orderID]/complete
+  // Changes the status of an order to "complete".
+  app.get(
+    "/api/orders/:orderID/complete",
+    asyncHandler(async (req, res) => {
+      try {
+        const { orderID } = req.params;
+
+        await make_query(
+          OUR_DB_URL,
+          `UPDATE orders SET is_complete = '1' WHERE order_id = '${orderID}'`
+        );
+
+        res.status(200);
+        res.json({ success: true });
+      } catch (error) {
+        res.status(400);
+        res.json({ success: false, error });
+      }
+    })
+  );
 
   //
   // RECEIVING DESK CLERK INTERFACE
@@ -280,6 +306,39 @@ const initAPI = (app) => {
   // A "?search" parameter may be added to search for specific
   // types of orders.
   // This endpoint is only available to administrators.
+  app.get(
+    "/api/orders",
+    asyncHandler(async (req, res) => {
+      let query = "SELECT * FROM orders";
+
+      // Eventually the admin will be able to search for specific orders,
+      // but I'll handle that later. See "View Order" in use case model.
+      // if (req?.query?.search) {
+      //   const escapedSearch = SqlString.escape(req.query.search);
+      //   const cleanedSearch = escapedSearch.slice(1, escapedSearch.length - 1);
+
+      //   query += ` WHERE description LIKE '%${cleanedSearch}%'`;
+      // }
+
+      try {
+        const dbQuery = await make_query(OUR_DB_URL, query);
+
+        res.status(200);
+        res.json(dbQuery);
+      } catch (error) {
+        res.status(400);
+        res.json({ error });
+      }
+    })
+  );
+
+  // GET /api/weight-brackets
+  // Returns a list of all weight-brackets
+
+  // POST /api/weight-brackets
+  // Creates a weight bracket
+
+  // DELETE /api/weight-brackets/[weight-bracket-ID]
 };
 
 module.exports = initAPI;

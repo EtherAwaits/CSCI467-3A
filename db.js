@@ -21,6 +21,8 @@ const LEGACY_DB_INFO = {
   database: "csci467",
 };
 
+// Below are two utility functions to make queries easier.
+
 const make_query_with_con = (con, sqlQuery) =>
   new Promise((resolve, reject) => {
     con.query(sqlQuery, (err, result) => {

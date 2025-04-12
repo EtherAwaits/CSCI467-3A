@@ -10,11 +10,12 @@ CREATE TABLE part_quantities (
 
 CREATE TABLE orders (
     order_id VARCHAR(200) PRIMARY KEY,
-    is_completed BOOLEAN NOT NULL DEFAULT 0,
+    is_complete BOOLEAN NOT NULL DEFAULT 0,
     customer_name VARCHAR(200) NOT NULL,
     email VARCHAR(200) NOT NULL,
     mailing_address VARCHAR(200) NOT NULL,
     shipping_price DECIMAL(10,2) NOT NULL,
+    authorization_number VARCHAR(50) NOT NULL,
     date_placed DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
     date_completed DATETIME
 );

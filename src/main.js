@@ -1,4 +1,24 @@
 document.addEventListener("DOMContentLoaded", () => {
+
+    // Brett - this an example of retrieving the parts data from the legacy database.
+    // Of course, feel free to either modify or just delete the code I've added to
+    // this file - it's just here to get you started.
+    // I have examples for other endpoints in the /tests directory that you can
+    // reference if you'd like.
+    // Thanks for everything you've been doing with the frontend thus far, (looks really good btw)
+    // and let me know if you have any questions!
+    async function getParts(searchQuery) {
+        const res = await fetch(`/api/parts${searchQuery !== undefined ? `?search=${searchQuery}` : ""}`);
+        const data = await res.json();
+        console.log(data);
+    }
+
+    // Get just the parts that contain "windshi" in their description:
+    getParts("windshi");
+
+    // Get every part in the legacy database:
+    getParts();
+
     const tabs = document.querySelectorAll(".tab-button");
     const display = document.getElementById("display");
 
