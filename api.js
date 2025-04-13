@@ -398,16 +398,52 @@ const initAPI = (app) => {
   app.get(
     "/api/orders",
     asyncHandler(async (req, res) => {
-      let query = "SELECT * FROM orders";
+      const { status, lowDate, highDate, lowPrice, highPrice } = req.query;
+      let whereAlreadyPresent = false;
+      let query = `SELECT orders.*, 
+                  (
+                    SELECT SUM(price * amount_ordered)
+                    FROM ordered_items WHERE order_id = orders.order_id
+                  ) base_price
+                  FROM orders`;
 
-      // Eventually the admin will be able to search for specific orders,
-      // but I'll handle that later. See "View Order" in use case model.
-      // if (req?.query?.search) {
-      //   const escapedSearch = SqlString.escape(req.query.search);
-      //   const cleanedSearch = escapedSearch.slice(1, escapedSearch.length - 1);
+      if (status) {
+        whereAlreadyPresent = true;
+        switch (status.toLowerCase()) {
+          case "authorized":
+            query += ` WHERE is_complete = 0`;
+            break;
 
-      //   query += ` WHERE description LIKE '%${cleanedSearch}%'`;
-      // }
+          case "complete":
+            query += ` WHERE is_complete = 1`;
+            break;
+
+          default:
+            res.status(400);
+            res.json({ error: "Invalid status parameter" });
+            return;
+        }
+      }
+
+      [lowDate, highDate, lowPrice, highPrice].forEach((param, i) => {
+        if (param) {
+          if (whereAlreadyPresent) {
+            query += " AND";
+          } else {
+            query += " WHERE";
+            whereAlreadyPresent = true;
+          }
+
+          if (i < 2) {
+            query += ` date_placed ${i > 0 ? "<" : ">"} '${param}'`;
+          } else {
+            query += ` (
+                          SELECT SUM(price * amount_ordered)
+                          FROM ordered_items WHERE order_id = orders.order_id
+                       ) ${i > 2 ? "<" : ">"} '${param}'`;
+          }
+        }
+      });
 
       try {
         const dbQuery = await make_query(OUR_DB_URL, query);
