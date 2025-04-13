@@ -137,8 +137,8 @@ const initAPI = (app) => {
       for (const item of items) {
         if (
           typeof item?.part_id !== "number" ||
-          typeof item?.quantity !== "number" ||
-          item.quantity < 1
+          typeof item?.amount_ordered !== "number" ||
+          item.amount_ordered < 1
         ) {
           res.status(400);
           res.json({
@@ -166,11 +166,11 @@ const initAPI = (app) => {
           const currStock = currStockQuery[0]?.quantity;
           if (typeof currStock !== "number") throw new Error();
 
-          price += currPrice[0].price * item.quantity;
+          price += currPrice[0].price * item.amount_ordered;
 
           orderedItemsStr +=
             `('${transactionID}','${item.part_id}',` +
-            `'${item.quantity}','${currPrice[0].price}'),`;
+            `'${item.amount_ordered}','${currPrice[0].price}'),`;
         } catch (error) {
           res.status(400);
           res.json({
@@ -214,7 +214,7 @@ const initAPI = (app) => {
 
         await make_query(
           OUR_DB_URL,
-          `INSERT INTO ordered_items (order_id,part_id,quantity,price) VALUES ${finalItemsStr}`
+          `INSERT INTO ordered_items (order_id,part_id,amount_ordered,price) VALUES ${finalItemsStr}`
         );
 
         // TODO: Email the customer that their order succeeded?
@@ -257,6 +257,74 @@ const initAPI = (app) => {
     })
   );
 
+  // GET /api/orders/[orderID]
+  // Returns the specific details of a single order,
+  // including all items in the order.
+  // This endpoint should be reused for the administrator interface.
+  app.get(
+    "/api/orders/:orderID",
+    asyncHandler(async (req, res) => {
+      try {
+        const { orderID } = req.params;
+
+        const ordersQuery = await make_query(
+          OUR_DB_URL,
+          `SELECT * FROM orders 
+           JOIN ordered_items ON orders.order_id = ordered_items.order_id
+           WHERE orders.order_id = '${orderID}'`
+        );
+
+        if (ordersQuery.length < 1) throw new Error("Order not found.");
+
+        const queryStr = ordersQuery.reduce(
+          (prev, curr) => prev + curr.part_id + ",",
+          "("
+        );
+
+        const closedQueryStr = queryStr.slice(0, queryStr.length - 1) + ")";
+
+        const partsQuery = await make_query(
+          LEGACY_DB_INFO,
+          `SELECT * from parts
+           WHERE number IN ${closedQueryStr}`
+        );
+
+        const mergedResults = ordersQuery.map((orderedItem) => {
+          // Again, inefficient because O(n^2), but it always works
+          const part = partsQuery.find(
+            (currPart) => currPart.number === orderedItem.part_id
+          );
+
+          return {
+            part_id: part.number,
+            amount_ordered: orderedItem.amount_ordered,
+            price: part.price,
+            weight: part.weight,
+            description: part.description,
+            pictureURL: part.pictureURL,
+          };
+        });
+
+        res.status(200);
+        res.json({
+          order_id: ordersQuery[0].order_id,
+          is_complete: ordersQuery[0].is_complete,
+          customer_name: ordersQuery[0].customer_name,
+          email: ordersQuery[0].email,
+          mailing_address: ordersQuery[0].mailing_address,
+          shipping_price: ordersQuery[0].shipping_price,
+          authorization_number: ordersQuery[0].authorization_number,
+          date_placed: ordersQuery[0].date_placed,
+          date_completed: ordersQuery[0].date_completed,
+          items: mergedResults,
+        });
+      } catch (error) {
+        res.status(400);
+        res.json({ error });
+      }
+    })
+  );
+
   // GET /api/orders/[orderID]/invoice
   // Returns an invoice (PDF?) detailing the price that the customer paid
 
@@ -265,7 +333,7 @@ const initAPI = (app) => {
 
   // POST /api/orders/[orderID]/complete
   // Changes the status of an order to "complete".
-  app.get(
+  app.post(
     "/api/orders/:orderID/complete",
     asyncHandler(async (req, res) => {
       try {
@@ -296,6 +364,27 @@ const initAPI = (app) => {
   // Sets the quantity of a particular part.
   // If that part is not tracked in our database, add it.
   //
+  app.post(
+    "/api/parts/:partID",
+    asyncHandler(async (req, res) => {
+      try {
+        const { partID } = req.params;
+        const { quantity } = req.body;
+
+        await make_query(
+          OUR_DB_URL,
+          `INSERT INTO part_quantities (part_id,quantity) VALUES ('${partID}','${quantity}') 
+           ON DUPLICATE KEY UPDATE quantity = '${quantity}'`
+        );
+
+        res.status(200);
+        res.json({ success: true });
+      } catch (error) {
+        res.status(400);
+        res.json({ success: false, error });
+      }
+    })
+  );
 
   //
   // ADMINISTRATOR INTERFACE

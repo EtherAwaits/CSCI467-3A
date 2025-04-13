@@ -11,11 +11,11 @@ const data = {
   items: [
     {
       part_id: 104,
-      quantity: 1,
+      amount_ordered: 1,
     },
     {
       part_id: 105,
-      quantity: 4,
+      amount_ordered: 4,
     },
   ],
 };

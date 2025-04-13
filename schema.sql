@@ -23,7 +23,7 @@ CREATE TABLE orders (
 CREATE TABLE ordered_items (
     order_id VARCHAR(200) NOT NULL,
     part_id INT NOT NULL,
-    quantity INT NOT NULL,
+    amount_ordered INT NOT NULL,
     price DECIMAL (10,2) NOT NULL,
 
     FOREIGN KEY (order_id) REFERENCES orders (order_id),
