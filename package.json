@@ -1,18 +1,20 @@
 {
+  "name": "csci467",
   "dependencies": {
-    "@tailwindcss/cli": "^4.0.1",
+    "@tailwindcss/cli": "^4.0.17",
     "@tailwindcss/postcss": "^4.0.1",
     "dotenv": "^16.4.7",
     "express": "^4.21.2",
     "mysql": "^2.18.1",
     "postcss": "^8.5.1",
-    "tailwindcss": "^4.0.1"
+    "sqlstring": "^2.3.3",
+    "tailwindcss": "^4.0.17",
+    "uuid": "^11.1.0"
   },
   "scripts": {
-    "dev": "npx tailwindcss -i ./src/input.css -o ./src/output.css --watch --minify",
-    "schema": "node schema.js"
+    "dev": "npx tailwindcss -i ./src/input.css -o ./src/output.css --watch --minify"
   },
   "devDependencies": {
-    "daisyui": "^4.12.23"
+    "daisyui": "^5.0.9"
   }
 }

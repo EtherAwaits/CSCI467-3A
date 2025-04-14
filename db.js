@@ -1,22 +1,57 @@
-// This file initializes the database.
-// It does not actually connect to the database, though;
-// that probably needs to be done for each individual URL handler,
-// unless there's a better way to do it.
+// This file contains the constants needed to connect to
+// both our database and the legacy database.
 
-const mysql = require("mysql");
 const dotenv = require("dotenv").config();
+const mysql = require("mysql");
 
 if (dotenv.error) {
   throw new Error(
-    "`.env` file count not be parsed. Did you remember to rename `.env.example` to `.env`?"
+    "`.env` file count not be parsed. Did you remember to create a `.env` file?"
   );
 }
 
-const DB_URL = dotenv.parsed.DB_URL;
+// Our database connection info.
+const OUR_DB_URL = dotenv.parsed.DB_URL;
 
-// The actual database connection
-const con = mysql.createConnection(DB_URL);
+// Legacy db connection info.
+const LEGACY_DB_INFO = {
+  host: "blitz.cs.niu.edu",
+  user: "student",
+  password: "student",
+  database: "csci467",
+};
+
+// Below are two utility functions to make queries easier.
+
+const make_query_with_con = (con, sqlQuery) =>
+  new Promise((resolve, reject) => {
+    con.query(sqlQuery, (err, result) => {
+      if (!err) {
+        resolve(result);
+      } else {
+        con.end();
+        reject(err);
+      }
+    });
+  });
+
+const make_query = (connectionInfo, sqlQuery) =>
+  new Promise((resolve, reject) => {
+    const con = mysql.createConnection(connectionInfo);
+
+    con.connect();
+
+    make_query_with_con(con, sqlQuery)
+      .then((result) => {
+        con.end();
+        resolve(result);
+      })
+      .catch((err) => reject(err));
+  });
 
 module.exports = {
-  con,
+  OUR_DB_URL,
+  LEGACY_DB_INFO,
+  make_query_with_con,
+  make_query,
 };
