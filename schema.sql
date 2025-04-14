@@ -14,7 +14,9 @@ CREATE TABLE orders (
     customer_name VARCHAR(200) NOT NULL,
     email VARCHAR(200) NOT NULL,
     mailing_address VARCHAR(200) NOT NULL,
+    base_price DECIMAL(10,2) NOT NULL,
     shipping_price DECIMAL(10,2) NOT NULL,
+    total_weight DECIMAL(10,2) NOT NULL,
     authorization_number VARCHAR(50) NOT NULL,
     date_placed DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
     date_completed DATETIME

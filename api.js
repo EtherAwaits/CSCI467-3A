@@ -114,10 +114,12 @@ const initAPI = (app) => {
       const { name, email, address, cc, exp, items } = req.body;
       const transactionID = uuid.v4();
       let orderedItemsStr = "";
-      let price = 0;
+      let shippingPrice = 0;
+      let basePrice = 0;
+      let weight = 0;
 
-      for (const parm of [name, email, address, cc, exp]) {
-        if (!parm || typeof parm !== "string") {
+      for (const param of [name, email, address, cc, exp]) {
+        if (!param || typeof param !== "string") {
           res.status(400);
           res.json({
             error: "Missing parameter(s)",
@@ -148,9 +150,9 @@ const initAPI = (app) => {
         }
 
         try {
-          const currPrice = await make_query(
+          const partInfo = await make_query(
             LEGACY_DB_INFO,
-            `SELECT price FROM parts WHERE number = ${item.part_id}`
+            `SELECT price,weight FROM parts WHERE number = ${item.part_id}`
           );
 
           const currStockQuery = await make_query(
@@ -166,11 +168,11 @@ const initAPI = (app) => {
           const currStock = currStockQuery[0]?.quantity;
           if (typeof currStock !== "number") throw new Error();
 
-          price += currPrice[0].price * item.amount_ordered;
+          basePrice += partInfo[0].price * item.amount_ordered;
+          weight += partInfo[0].weight * item.amount_ordered;
 
-          orderedItemsStr +=
-            `('${transactionID}','${item.part_id}',` +
-            `'${item.amount_ordered}','${currPrice[0].price}'),`;
+          orderedItemsStr += `('${transactionID}','${item.part_id}',
+                               '${item.amount_ordered}','${partInfo[0].price}'),`;
         } catch (error) {
           res.status(400);
           res.json({
@@ -178,6 +180,26 @@ const initAPI = (app) => {
           });
           return;
         }
+      }
+
+      try {
+        const shippingPriceQuery = await make_query(
+          OUR_DB_URL,
+          `SELECT shipping_price FROM weight_brackets 
+           WHERE minimum_weight < ${weight}
+           ORDER BY minimum_weight DESC
+           LIMIT 1`
+        );
+
+        if (shippingPriceQuery.length > 0) {
+          shippingPrice = shippingPriceQuery[0].shipping_price;
+        }
+      } catch (error) {
+        res.status(500);
+        res.json({
+          error,
+        });
+        return;
       }
 
       const finalItemsStr =
@@ -198,7 +220,7 @@ const initAPI = (app) => {
               cc,
               name,
               exp,
-              amount: price,
+              amount: basePrice + shippingPrice,
             }),
           }
         );
@@ -207,22 +229,28 @@ const initAPI = (app) => {
 
         await make_query(
           OUR_DB_URL,
-          "INSERT INTO orders (order_id,customer_name,email,mailing_address,authorization_number,shipping_price) VALUES" +
-            `('${transactionID}','${name}','${email}','${address}',` +
-            `'${authResult.authorization}',${0})`
+          `INSERT INTO orders (
+              order_id,customer_name,email,
+              mailing_address,authorization_number,
+              base_price,shipping_price,total_weight
+           ) VALUES (
+              '${transactionID}','${name}','${email}',
+              '${address}','${authResult.authorization}',
+               ${basePrice},${shippingPrice},${weight}
+           )`
         );
 
         await make_query(
           OUR_DB_URL,
-          `INSERT INTO ordered_items (order_id,part_id,amount_ordered,price) VALUES ${finalItemsStr}`
+          `INSERT INTO ordered_items (
+              order_id,part_id,amount_ordered,price
+            ) VALUES ${finalItemsStr}`
         );
 
         // TODO: Email the customer that their order succeeded?
 
         res.status(200);
-        res.json({
-          result: authResult,
-        });
+        res.json(authResult);
       } catch (error) {
         res.status(400);
         res.json({
@@ -274,7 +302,11 @@ const initAPI = (app) => {
            WHERE orders.order_id = '${orderID}'`
         );
 
-        if (ordersQuery.length < 1) throw new Error("Order not found.");
+        if (ordersQuery.length < 1) {
+          res.status(400);
+          res.json({ error: "Order not found" });
+          return;
+        }
 
         const queryStr = ordersQuery.reduce(
           (prev, curr) => prev + curr.part_id + ",",
@@ -298,7 +330,7 @@ const initAPI = (app) => {
           return {
             part_id: part.number,
             amount_ordered: orderedItem.amount_ordered,
-            price: part.price,
+            price: orderedItem.price,
             weight: part.weight,
             description: part.description,
             pictureURL: part.pictureURL,
@@ -312,7 +344,9 @@ const initAPI = (app) => {
           customer_name: ordersQuery[0].customer_name,
           email: ordersQuery[0].email,
           mailing_address: ordersQuery[0].mailing_address,
+          base_price: ordersQuery[0].base_price,
           shipping_price: ordersQuery[0].shipping_price,
+          total_weight: ordersQuery[0].total_weight,
           authorization_number: ordersQuery[0].authorization_number,
           date_placed: ordersQuery[0].date_placed,
           date_completed: ordersQuery[0].date_completed,
@@ -373,7 +407,8 @@ const initAPI = (app) => {
 
         await make_query(
           OUR_DB_URL,
-          `INSERT INTO part_quantities (part_id,quantity) VALUES ('${partID}','${quantity}') 
+          `INSERT INTO part_quantities (part_id,quantity) 
+           VALUES ('${partID}','${quantity}') 
            ON DUPLICATE KEY UPDATE quantity = '${quantity}'`
         );
 
@@ -392,20 +427,19 @@ const initAPI = (app) => {
 
   // GET /api/orders
   // Returns all of the orders in our database.
-  // A "?search" parameter may be added to search for specific
-  // types of orders.
+  // This endpoint may take up to five search parameters:
+  //   status=     may be 'authorized' or 'complete'
+  //   lowDate=    the minimum date
+  //   highDate=   the maximum date
+  //   lowprice=   the minimum total price
+  //   highprice=  the maximum total price
   // This endpoint is only available to administrators.
   app.get(
     "/api/orders",
     asyncHandler(async (req, res) => {
       const { status, lowDate, highDate, lowPrice, highPrice } = req.query;
       let whereAlreadyPresent = false;
-      let query = `SELECT orders.*, 
-                  (
-                    SELECT SUM(price * amount_ordered)
-                    FROM ordered_items WHERE order_id = orders.order_id
-                  ) base_price
-                  FROM orders`;
+      let query = `SELECT * FROM orders`;
 
       if (status) {
         whereAlreadyPresent = true;
@@ -437,10 +471,9 @@ const initAPI = (app) => {
           if (i < 2) {
             query += ` date_placed ${i > 0 ? "<" : ">"} '${param}'`;
           } else {
-            query += ` (
-                          SELECT SUM(price * amount_ordered)
-                          FROM ordered_items WHERE order_id = orders.order_id
-                       ) ${i > 2 ? "<" : ">"} '${param}'`;
+            query += ` (base_price + shipping_price) ${
+              i > 2 ? "<" : ">"
+            } '${param}'`;
           }
         }
       });
@@ -459,11 +492,69 @@ const initAPI = (app) => {
 
   // GET /api/weight-brackets
   // Returns a list of all weight-brackets
+  app.get(
+    "/api/weight-brackets",
+    asyncHandler(async (_, res) => {
+      try {
+        const result = await make_query(
+          OUR_DB_URL,
+          `SELECT * FROM weight_brackets
+           ORDER BY minimum_weight`
+        );
+
+        res.status(200);
+        res.json(result);
+      } catch (error) {
+        res.status(400);
+        res.json({ error });
+      }
+    })
+  );
 
   // POST /api/weight-brackets
   // Creates a weight bracket
+  app.post(
+    "/api/weight-brackets",
+    asyncHandler(async (req, res) => {
+      try {
+        const { minimum_weight, shipping_price } = req.body;
+
+        await make_query(
+          OUR_DB_URL,
+          `INSERT INTO weight_brackets 
+           (minimum_weight,shipping_price) VALUES
+           ('${minimum_weight}','${shipping_price}')`
+        );
+
+        res.status(200);
+        res.json({ success: true });
+      } catch (error) {
+        res.status(400);
+        res.json({ success: false, error });
+      }
+    })
+  );
 
   // DELETE /api/weight-brackets/[weight-bracket-ID]
+  app.delete(
+    "/api/weight-brackets/:weightBracketID",
+    asyncHandler(async (req, res) => {
+      try {
+        const { weightBracketID } = req.params;
+
+        await make_query(
+          OUR_DB_URL,
+          `DELETE FROM weight_brackets WHERE weight_bracket_id = ${weightBracketID}`
+        );
+
+        res.status(200);
+        res.json({ success: true });
+      } catch (error) {
+        res.status(400);
+        res.json({ success: false, error });
+      }
+    })
+  );
 };
 
 module.exports = initAPI;

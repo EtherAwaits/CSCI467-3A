@@ -4,7 +4,7 @@ const { PORT } = require("../config.js");
 // with all of the parts ordered.
 (async () => {
   const res = await fetch(
-    `http://localhost:${PORT}/api/orders/e5ea8a68-04a0-4fa4-97e9-af4196d32cbe`
+    `http://localhost:${PORT}/api/orders/c9debb2a-765b-4e8f-a3b6-1fd4ce151e50`
   );
   const data = await res.json();
   console.log(data);

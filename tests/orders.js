@@ -5,7 +5,7 @@ const { PORT } = require("../config.js");
 // admin.
 (async () => {
   const result = await fetch(
-    `http://localhost:${PORT}/api/orders?lowPrice=253&highPrice=254`
+    `http://localhost:${PORT}/api/orders?lowPrice=253`
   );
 
   const content = await result.json();

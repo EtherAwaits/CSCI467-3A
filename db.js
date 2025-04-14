@@ -29,6 +29,7 @@ const make_query_with_con = (con, sqlQuery) =>
       if (!err) {
         resolve(result);
       } else {
+        con.end();
         reject(err);
       }
     });
@@ -41,10 +42,11 @@ const make_query = (connectionInfo, sqlQuery) =>
     con.connect();
 
     make_query_with_con(con, sqlQuery)
-      .then((result) => resolve(result))
+      .then((result) => {
+        con.end();
+        resolve(result);
+      })
       .catch((err) => reject(err));
-
-    con.end();
   });
 
 module.exports = {
