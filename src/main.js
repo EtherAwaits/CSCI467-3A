@@ -19,6 +19,77 @@ document.addEventListener("DOMContentLoaded", () => {
     // Get every part in the legacy database:
     getParts();
 
+    // This is some starter code for processing a checkout.
+    // This function should run when the user clicks "submit"
+    // on the checkout form (see addEventListener call below).
+    async function checkoutHandler(event) {
+        // Ensures that the page does not refresh when we submit.
+        event.preventDefault();
+
+        // Note that the "#credit-card" here means that "credit-card"
+        // is the name of the ID on a text <input /> field. These lines
+        // get whatever value has currently been typed into the input
+        // fields by the user (assuming that you've put id="credit-card",
+        // id="expiration-date", etc. on the <input /> tags)
+        const creditCard = document.querySelector("#credit-card").value;
+        const expDate = document.querySelector("#expiration-date").value;
+        const name = document.querySelector("#name").value;
+        const email = document.querySelector("#email").value;
+        const address = document.querySelector("#address").value;
+
+        // Now we actually make the call to our backend using
+        // the data that was typed into the form.
+        const result = await fetch(`/api/checkout`, {
+            method: "POST",
+            headers: {
+            Accept: "application/json",
+            "Content-Type": "application/json",
+            },
+            body: JSON.stringify({
+                cc: creditCard,
+                exp: expDate,
+                name: name,
+                email: email,
+                address: address,
+
+                // The items that they are purchasing are currently
+                // hardcoded. Once we've implemented the cart, 
+                // this will change.
+                items: [
+                  {
+                    part_id: 104,
+                    amount_ordered: 1,
+                  },
+                  {
+                    part_id: 105,
+                    amount_ordered: 4,
+                  },
+                ],
+              }),
+        });
+
+        // This just checks that our endpoint did something
+        const content = await result.json();
+        console.log(content)
+    }
+
+    // Assuming that you have a form with an id of checkout, this will call
+    // the checkoutHandler function when the user clicks submit.
+    document.querySelector("#checkout").addEventListener("submit", checkoutHandler);
+
+    // So, essentially, the form might look like this:
+    // <form id="checkout">
+    //     <input type="text" id="credit-card"/>
+    //     <input type="text" id="expiration-date"/>
+    //     <input type="text" id="name"/>
+    //     <input type="text" id="email"/>
+    //     <input type="text" id="address"/>
+    //     <button type="submit">Submit</button>
+    // </form>
+
+    // This is the end of the checkout starter code.
+    // The rest of Brett's code starts below.
+
     const tabs = document.querySelectorAll(".tab-button");
     const display = document.getElementById("display");
 
