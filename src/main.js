@@ -75,7 +75,7 @@ document.addEventListener("DOMContentLoaded", () => {
 
     // Assuming that you have a form with an id of checkout, this will call
     // the checkoutHandler function when the user clicks submit.
-    document.querySelector("#checkout").addEventListener("submit", checkoutHandler);
+    //document.querySelector("#checkout").addEventListener("submit", checkoutHandler);
 
     // So, essentially, the form might look like this:
     // <form id="checkout">
@@ -163,7 +163,35 @@ document.addEventListener("DOMContentLoaded", () => {
                             </div>
                         </div>
                     </div>
+                    <form id="checkout">
+                        <label for="credit-card">Credit Card:</label> <input type="text" id="credit-card" name ="credit-card"/><br>
+                        <label for="expiration-date">Expiration Date:</label> <input type="text" id="expiration-date" name="expiration-date" required/><br>
+                        <label for="name">Name:</label> <input type="text" id="name" name="name" required oninvalid="this.setCustomValidity('Please enter your name')" oninput="this.setCustomValidity('')"/><br>
+                        <label for="email">E-mail:</label> <input type="text" id="email" name="email"/><br>
+                        <label for="address">Address:</label> <input type="text" id="address" name="address"/><br>
+                        <button type="submit">Submit</button>
+                    </form>
                 `;
+                document.querySelector("#checkout").addEventListener("submit", checkoutHandler);
+
+                /*
+                     {"vendor":"VE001-99", **? // unsure of what a vendor is in this context... the location?
+                     "trans":"907-670448-296",
+                     "cc":"6011 1234 4321 1234",
+                     "name":"John Doe",
+                     "exp":"12/2026",
+                     "amount":"654.32",
+                     "brand":"discover",    ***
+                     "authorization":"10432", ***
+                     "timeStamp":1744747069232, ***
+                     "_id":"67feba3d68830e001ec00786"} *** 
+
+                     to_do: 
+                     figure out timestame, id, and authorization generations
+                     
+                     ensure that all required fields are filled with valid information
+                        If they are invalid, mark them and leave the other fields alone
+                */
             break;
             default:
                 display.innerHTML = `
