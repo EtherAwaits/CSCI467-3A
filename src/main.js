@@ -11,6 +11,7 @@ document.addEventListener("DOMContentLoaded", () => {
         const res = await fetch(`/api/parts${searchQuery !== undefined ? `?search=${searchQuery}` : ""}`);
         const data = await res.json();
         console.log(data);
+        return data;
     }
 
     // Get just the parts that contain "windshi" in their description:
@@ -46,37 +47,113 @@ document.addEventListener("DOMContentLoaded", () => {
                 display.innerHTML = `
                     <h1 class="text-xl font-bold my-2">Products</h1>
 
-                    <label class="input">
-                    <svg class="h-[1em] opacity-50" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><g stroke-linejoin="round" stroke-linecap="round" stroke-width="2.5" fill="none" stroke="currentColor"><circle cx="11" cy="11" r="8"></circle><path d="m21 21-4.3-4.3"></path></g></svg>
-                    <input type="search" required placeholder="Search"/>
+                    <label class="input input-lg">
+                        <svg class="h-[1em] opacity-50" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24">
+                            <g stroke-linejoin="round" stroke-linecap="round" stroke-width="2.5" fill="none" stroke="currentColor">
+                                <circle cx="11" cy="11" r="8"></circle>
+                                <path d="m21 21-4.3-4.3"></path>
+                            </g>
+                        </svg>
+                        <input type="search" required placeholder="Search" id="product-search" />
                     </label>
 
-                    <div class="card grid grid-cols-1 p-12 my-2 gap-2 bg-base-300 border-neutral border-2 h-9/10 overflow-y-auto">
-                        <div class="btn grid grid-cols-2 bg-primary hover:border-accent hover:border-single hover:border-2 hover:shadow-lg hover:shadow-accent/50 p-2 tooltip tooltip-secondary">
-                            <div class="flex gap-2 justify-start items-center">
-                            <h3 class="font-bold truncate text-sm text-left align-center">part label idk</h3>
-                            </div>
-                            <div class="flex gap-2 justify-end items-center">
-                            <p class="opacity-80 p-1 place-self-center text-xs w-16 sm:w-20 bg-base-300 border-neutral border-2 text-center">button</p>
-                            </div>
-                        </div>
-                    </div>
+                    <table class="table-auto w-full my-4">
+                        <thead>
+                            <tr class="bg-primary text-white grid grid-cols-6 gap-2 rounded-2xl ">
+                                <th class="p-2">Product</th>
+                                <th class="p-2">Price</th>
+                                <th class="p-2">Weight</th>
+                                <th class="p-2">Quantity</th>
+                                <th class="p-2"></th>
+                                <th class="p-2"></th>
+                            </tr>
+                        </thead>
+                        <tbody id="product-list">
+                        </tbody>
+                    </table>
                 `;
-            break;
+
+                // Display products
+                getParts().then((products) => {
+                    const productList = document.getElementById("product-list");
+                    productList.innerHTML = products.map(product => `
+                        <tr class="bg-base-300 hover:outline-3 hover:outline-accent rounded-2xl grid grid-cols-5 gap-2 my-2 hover:shadow-lg hover:shadow-accent/50">
+                        <div>
+                            <td class="p-2 flex"><img src="${product.pictureURL}" alt="${product.description}" class="size-10 rounded-lg" /><b class="mx-4">${product.description}</b></td>
+                            <td class="p-2">$${product.price.toFixed(2)}</td>
+                            <td class="p-2">${product.weight.toFixed(2)}</td>
+                            <td class="p-2">${product.quantity}</td>
+                            <td class="p-2">
+                                <input type="number" min="1" max="${product.quantity}" value="1" class="input input-bordered w-16" id="quantity-${product.number}" />
+                                <button class="btn bg-primary hover:bg-accent hover:border-accent hover:border-single hover:border-2 hover:shadow-lg hover:shadow-accent/50 p-2 tooltip tooltip-secondary" id="add-to-cart-${product.number}">Add to Cart</button>
+                            </td>
+                        </div>
+                        </tr>
+                    `).join("");
+                });
+
+                // Function for the search bar
+                const searchInput = document.getElementById("product-search");
+                searchInput.addEventListener("input", (event) => {
+                    const query = event.target.value.trim();
+                    getParts(query).then((products) => {
+                        const productList = document.getElementById("product-list");
+                        productList.innerHTML = products.map(product => `
+                            <tr class="bg-base-300 hover:outline-3 hover:outline-accent rounded-2xl grid grid-cols-5 gap-2 my-2 hover:shadow-lg hover:shadow-accent/50">
+                            <div>
+                                <td class="p-2 flex"><img src="${product.pictureURL}" alt="${product.description}" class="size-10 rounded-lg" /><b class="mx-4">${product.description}</b></td>
+                                <td class="p-2">$${product.price.toFixed(2)}</td>
+                                <td class="p-2">${product.weight.toFixed(2)}</td>
+                                <td class="p-2">${product.quantity}</td>
+                                <td class="p-2">
+                                    <input type="number" min="1" max="${product.quantity}" value="1" class="input input-bordered w-16" id="quantity-${product.number}" />
+                                    <button class="btn bg-primary hover:bg-accent hover:border-accent hover:border-single hover:border-2 hover:shadow-lg hover:shadow-accent/50 p-2 tooltip tooltip-secondary" id="add-to-cart-${product.number}">Add to Cart</button>
+                                </td>
+                            </div>
+                            </tr>
+                        `).join("");
+                    });
+                });
+
+                break;
             case "orders":
                 display.innerHTML = `
                     <h1 class="text-xl font-bold">Open Orders</h1>
-                    <div class="card grid grid-cols-1 p-12 gap-2 bg-base-300 border-neutral border-2 h-9/10 overflow-y-auto my-2">
-                        <div class="btn grid grid-cols-2 bg-primary hover:border-accent hover:border-single hover:border-2 hover:shadow-lg hover:shadow-accent/50 p-2 tooltip tooltip-secondary">
-                            <div class="flex gap-2 justify-start items-center">
-                            <h3 class="font-bold truncate text-sm text-left align-center">warehouse label idk</h3>
-                            </div>
-                            <div class="flex gap-2 justify-end items-center">
-                            <p class="opacity-80 p-1 place-self-center text-xs w-16 sm:w-20 bg-base-300 border-neutral border-2 text-center">button</p>
-                            </div>
-                        </div>
-                    </div>
+                    
+                    <table class="table-auto w-full my-4">
+                        <thead>
+                            <tr class="bg-primary text-white grid grid-cols-6 gap-2 rounded-2xl ">
+                                <th class="p-2">Product</th>
+                                <th class="p-2">Price</th>
+                                <th class="p-2">Weight</th>
+                                <th class="p-2">Quantity</th>
+                                <th class="p-2"></th>
+                                <th class="p-2"></th>
+                            </tr>
+                        </thead>
+                        <tbody id="product-list">
+                        </tbody>
+                    </table>
                 `;
+
+                // Display products
+                getParts().then((products) => {
+                    const productList = document.getElementById("product-list");
+                    productList.innerHTML = products.map(product => `
+                        <tr class="bg-base-300 hover:outline-3 hover:outline-accent rounded-2xl grid grid-cols-5 gap-2 my-2 hover:shadow-lg hover:shadow-accent/50">
+                        <div>
+                            <td class="p-2 flex"><img src="${product.pictureURL}" alt="${product.description}" class="size-10 rounded-lg" /><b class="mx-4">${product.description}</b></td>
+                            <td class="p-2">$${product.price.toFixed(2)}</td>
+                            <td class="p-2">${product.weight.toFixed(2)}</td>
+                            <td class="p-2">${product.quantity}</td>
+                            <td class="p-2">
+                                <input type="number" min="1" max="${product.quantity}" value="1" class="input input-bordered w-16" id="quantity-${product.number}" />
+                                <button class="btn bg-primary hover:bg-accent hover:border-accent hover:border-single hover:border-2 hover:shadow-lg hover:shadow-accent/50 p-2 tooltip tooltip-secondary" id="add-to-cart-${product.number}">Add to Cart</button>
+                            </td>
+                        </div>
+                        </tr>
+                    `).join("");
+                });
             break;
             case "receiving":
                 display.innerHTML = `
@@ -105,7 +182,7 @@ document.addEventListener("DOMContentLoaded", () => {
                     This is where the weights things go.
                     
                     <i class="text-l">Add Bracket</i>
-                    <div class="card grid grid-cols-3 p-4 gap-2">
+                    <div class="card grid grid-cols-3 p-4 gap-2 w-1/2">
                         <input type="number" placeholder="Weight" class="input" />
                         <input type="number" placeholder="Cost" class="input" />
                         <button class="btn">Create</button>
@@ -114,7 +191,7 @@ document.addEventListener("DOMContentLoaded", () => {
                     <h1 class="text-xl font-bold">Past Orders</h1>
                     <i class="text-m">Filters</i>
 
-                    <div class="card grid grid-cols-2 p-4 gap-2">
+                    <div class="card grid grid-cols-2 p-4 gap-2 w-1/2">
                         <button popovertarget="cally-popover1" class="input input-border" id="cally1" style="anchor-name:--cally1">
                         Start Date
                         </button>
