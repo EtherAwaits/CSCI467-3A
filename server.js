@@ -6,7 +6,7 @@ app.use(express.static("src"));
 app.use(express.json());
 
 // Include API routes
-require("./api.js")(app);
+require("./api/api.js")(app);
 
 app.listen(PORT, (error) => {
   if (!error)
