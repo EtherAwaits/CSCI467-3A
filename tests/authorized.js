@@ -5,7 +5,9 @@ const { PORT } = require("../config.js");
 // warehouse worker interface to see which orders they need to
 // work on.
 (async () => {
-  const result = await fetch(`http://localhost:${PORT}/api/orders/authorized`);
+  const result = await fetch(
+    `http://localhost:${PORT}/api/orders?status=authorized`
+  );
 
   const content = await result.json();
   console.log(content);
