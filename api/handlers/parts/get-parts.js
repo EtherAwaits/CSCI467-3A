@@ -6,7 +6,7 @@ const {
 } = require("../../../db.js");
 
 const { asyncHandler } = require("../../utils.js");
-const { SqlString } = require("sqlstring");
+const SqlString = require("sqlstring");
 const mysql = require("mysql");
 
 // GET /api/parts
