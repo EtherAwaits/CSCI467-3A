@@ -3,6 +3,8 @@
   "dependencies": {
     "@tailwindcss/cli": "^4.0.17",
     "@tailwindcss/postcss": "^4.0.1",
+    "cally": "^0.8.0",
+    "pikaday": "^1.8.2",
     "dotenv": "^16.4.7",
     "express": "^4.21.2",
     "mysql": "^2.18.1",
