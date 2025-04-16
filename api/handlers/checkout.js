@@ -23,6 +23,7 @@ module.exports = asyncHandler(async (req, res) => {
       res.status(400);
       res.json({
         error: "Missing parameter(s)",
+        success: false,
       });
       return;
     }
@@ -32,6 +33,7 @@ module.exports = asyncHandler(async (req, res) => {
     res.status(400);
     res.json({
       error: "Must provide a nonempty list of items",
+      success: false,
     });
     return;
   }
@@ -45,6 +47,7 @@ module.exports = asyncHandler(async (req, res) => {
       res.status(400);
       res.json({
         error: "At least one line item has an invalid format",
+        success: false,
       });
       return;
     }
@@ -72,11 +75,12 @@ module.exports = asyncHandler(async (req, res) => {
       weight += partInfo[0].weight * item.amount_ordered;
 
       orderedItemsStr += `('${transactionID}','${item.part_id}',
-                               '${item.amount_ordered}','${partInfo[0].price}'),`;
+                           '${item.amount_ordered}','${partInfo[0].price}'),`;
     } catch (error) {
       res.status(400);
       res.json({
         error: "Could not find at least one specified part",
+        success: false,
       });
       return;
     }
@@ -86,9 +90,9 @@ module.exports = asyncHandler(async (req, res) => {
     const shippingPriceQuery = await make_query(
       OUR_DB_URL,
       `SELECT shipping_price FROM weight_brackets 
-           WHERE minimum_weight < ${weight}
-           ORDER BY minimum_weight DESC
-           LIMIT 1`
+       WHERE minimum_weight < ${weight}
+       ORDER BY minimum_weight DESC
+       LIMIT 1`
     );
 
     if (shippingPriceQuery.length > 0) {
@@ -118,39 +122,50 @@ module.exports = asyncHandler(async (req, res) => {
         cc,
         name,
         exp,
-        amount: basePrice + shippingPrice,
+        amount: Math.round((basePrice + shippingPrice) * 100) / 100,
       }),
     });
 
     const authResult = await authResponse.json();
 
+    if (authResult.errors) {
+      res.status(400);
+      res.json({
+        success: false,
+        error: "Payment processor rejected the transaction",
+        error_messages: authResult.errors,
+      });
+      return;
+    }
+
     await make_query(
       OUR_DB_URL,
       `INSERT INTO orders (
-              order_id,customer_name,email,
-              mailing_address,authorization_number,
-              base_price,shipping_price,total_weight
-           ) VALUES (
-              '${transactionID}','${name}','${email}',
-              '${address}','${authResult.authorization}',
-               ${basePrice},${shippingPrice},${weight}
-           )`
+          order_id,customer_name,email,
+          mailing_address,authorization_number,
+          base_price,shipping_price,total_weight
+      ) VALUES (
+          '${transactionID}','${name}','${email}',
+         '${address}','${authResult.authorization}',
+          ${basePrice},${shippingPrice},${weight}
+      )`
     );
 
     await make_query(
       OUR_DB_URL,
       `INSERT INTO ordered_items (
-              order_id,part_id,amount_ordered,price
-            ) VALUES ${finalItemsStr}`
+          order_id,part_id,amount_ordered,price
+        ) VALUES ${finalItemsStr}`
     );
 
     // TODO: Email the customer that their order succeeded?
 
     res.status(200);
-    res.json(authResult);
+    res.json({ ...authResult, success: true });
   } catch (error) {
     res.status(400);
     res.json({
+      success: false,
       error,
     });
     return;
