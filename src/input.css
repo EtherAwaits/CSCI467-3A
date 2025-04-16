@@ -6,6 +6,6 @@
 @tailwind components;
 @tailwind utilities;
 
-.form-btn {
-  @apply text-white bg-secondary hover:bg-accent hover:border-accent hover:border-single hover:border-2 hover:shadow-lg hover:shadow-accent/50 p-2;
+.btn-form {
+  @apply text-white bg-secondary hover:bg-accent hover:border-accent hover:border-2 hover:shadow-lg hover:shadow-accent/50 p-2;
 }
