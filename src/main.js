@@ -171,10 +171,10 @@ document.addEventListener("DOMContentLoaded", () => {
                     </table>
                 `;
 
-                refreshProducts(); 
+                refreshProduct(); 
 
                 // Display products
-                function refreshProducts(query = "") {
+                function refreshProduct(query = "") {
                     getParts(query).then((products) => {
                         const productList = document.getElementById("product-list");
                         productList.innerHTML = products.map(product => `
@@ -197,7 +197,7 @@ document.addEventListener("DOMContentLoaded", () => {
                 // Function for the search bar
                 const searchInput = document.getElementById("product-search");
                 searchInput.addEventListener("input", (event) => {
-                    refreshProducts(event.target.value.trim());
+                    refreshProduct(event.target.value.trim());
                 });
 
                 break;
@@ -221,10 +221,10 @@ document.addEventListener("DOMContentLoaded", () => {
                     </table>
                 `;
 
-                refreshOrders();
+                refreshOrder();
 
                 // Display orders
-                function refreshOrders(query = "") {
+                function refreshOrder(query = "") {
                     getOrders().then((orders) => {
                         const productList = document.getElementById("product-list");
                         productList.innerHTML = orders.map(orders => `
@@ -246,6 +246,7 @@ document.addEventListener("DOMContentLoaded", () => {
                         completeButtons.forEach((button) => {
                             button.addEventListener("click", (event) => {
                                 console.log("clicked");
+                                refreshOrder();
                                 orderComplete(event.target.getAttribute("num"));
                             });
                         });
