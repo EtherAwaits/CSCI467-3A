@@ -14,11 +14,37 @@ document.addEventListener("DOMContentLoaded", () => {
         return data;
     }
 
-    // Get just the parts that contain "windshi" in their description:
-    getParts("windshi");
+    // Gets all authorized orders for order page.
+    async function getOrders() {
+        const res = await fetch(`/api/orders?status=authorized`);
+        const data = await res.json();
+        console.log(data);
+        return data;
+    }
 
-    // Get every part in the legacy database:
-    getParts();
+    // Gets all orders for admin page.
+    async function getAllOrders() {
+        const res = await fetch(`/api/orders`);
+        const data = await res.json();
+        console.log(data);
+        return data;
+    }
+
+    // Gets all Weight Brackets for admin page. Doesnt seem to work yet.
+    async function getWeights() {
+        const res = await fetch(`/api/weight-brackets`);
+        const data = await res.json();
+        console.log(data);
+        return data;
+    }
+
+    // Gets all Weight Brackets for admin page. Doesnt seem to work yet.
+    async function orderComplete(order) {
+        const res = await fetch(`/api/orders/${order}/complete`);
+        const data = await res.json();
+        console.log(`/api/orders/${order}/complete`);
+        return data;
+    }
 
     // This is some starter code for processing a checkout.
     // This function should run when the user clicks "submit"
@@ -76,7 +102,7 @@ document.addEventListener("DOMContentLoaded", () => {
 
     // Assuming that you have a form with an id of checkout, this will call
     // the checkoutHandler function when the user clicks submit.
-    document.querySelector("#checkout").addEventListener("submit", checkoutHandler);
+    // document.querySelector("#checkout").addEventListener("submit", checkoutHandler);
 
     // So, essentially, the form might look like this:
     // <form id="checkout">
@@ -109,6 +135,7 @@ document.addEventListener("DOMContentLoaded", () => {
         switch (tabName) {
             case "home":
                 display.innerHTML = `
+                <h1 class="text-xl font-bold my-4">🏠Home</h1>
                     <h1 class="text-xl font-bold text-center">Welcome to Ege Auto Parts</h1>
                     <img src="images/EGE_AUTO.png" alt="logo" class="rounded-4xl size-64 shadow-secondary/50 outline-secondary outline-double place-self-center my-2">
                     <i class="text-center">Quality parts for all your auto needs</i>
@@ -116,7 +143,7 @@ document.addEventListener("DOMContentLoaded", () => {
             break;
             case "products":
                 display.innerHTML = `
-                    <h1 class="text-xl font-bold my-2">Products</h1>
+                    <h1 class="text-xl font-bold my-4">👨‍🔧Products</h1>
 
                     <label class="input input-lg">
                         <svg class="h-[1em] opacity-50" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24">
@@ -130,11 +157,11 @@ document.addEventListener("DOMContentLoaded", () => {
 
                     <table class="table-auto w-full my-4">
                         <thead>
-                            <tr class="bg-primary text-white grid grid-cols-6 gap-2 rounded-2xl ">
+                            <tr class="bg-primary text-white grid grid-cols-6 rounded-2xl ">
                                 <th class="p-2">Product</th>
                                 <th class="p-2">Price</th>
                                 <th class="p-2">Weight</th>
-                                <th class="p-2">Quantity</th>
+                                <th class="p-2">In Stock</th>
                                 <th class="p-2"></th>
                                 <th class="p-2"></th>
                             </tr>
@@ -144,29 +171,10 @@ document.addEventListener("DOMContentLoaded", () => {
                     </table>
                 `;
 
-                // Display products
-                getParts().then((products) => {
-                    const productList = document.getElementById("product-list");
-                    productList.innerHTML = products.map(product => `
-                        <tr class="bg-base-300 hover:outline-3 hover:outline-accent rounded-2xl grid grid-cols-5 gap-2 my-2 hover:shadow-lg hover:shadow-accent/50">
-                        <div>
-                            <td class="p-2 flex"><img src="${product.pictureURL}" alt="${product.description}" class="size-10 rounded-lg" /><b class="mx-4">${product.description}</b></td>
-                            <td class="p-2">$${product.price.toFixed(2)}</td>
-                            <td class="p-2">${product.weight.toFixed(2)}</td>
-                            <td class="p-2">${product.quantity}</td>
-                            <td class="p-2">
-                                <input type="number" min="1" max="${product.quantity}" value="1" class="input input-bordered w-16" id="quantity-${product.number}" />
-                                <button class="btn bg-primary hover:bg-accent hover:border-accent hover:border-single hover:border-2 hover:shadow-lg hover:shadow-accent/50 p-2 tooltip tooltip-secondary" id="add-to-cart-${product.number}">Add to Cart</button>
-                            </td>
-                        </div>
-                        </tr>
-                    `).join("");
-                });
+                refreshProducts(); 
 
-                // Function for the search bar
-                const searchInput = document.getElementById("product-search");
-                searchInput.addEventListener("input", (event) => {
-                    const query = event.target.value.trim();
+                // Display products
+                function refreshProducts(query = "") {
                     getParts(query).then((products) => {
                         const productList = document.getElementById("product-list");
                         productList.innerHTML = products.map(product => `
@@ -184,20 +192,26 @@ document.addEventListener("DOMContentLoaded", () => {
                             </tr>
                         `).join("");
                     });
+                }
+
+                // Function for the search bar
+                const searchInput = document.getElementById("product-search");
+                searchInput.addEventListener("input", (event) => {
+                    refreshProducts(event.target.value.trim());
                 });
 
                 break;
             case "orders":
                 display.innerHTML = `
-                    <h1 class="text-xl font-bold">Open Orders</h1>
+                    <h1 class="text-xl font-bold my-4">📋Open Orders</h1>
                     
                     <table class="table-auto w-full my-4">
                         <thead>
-                            <tr class="bg-primary text-white grid grid-cols-6 gap-2 rounded-2xl ">
-                                <th class="p-2">Product</th>
-                                <th class="p-2">Price</th>
+                            <tr class="bg-primary text-white grid grid-cols-6 rounded-2xl ">
+                                <th class="p-2">Order ID</th>
+                                <th class="p-2">Customer</th>
+                                <th class="p-2">Total</th>
                                 <th class="p-2">Weight</th>
-                                <th class="p-2">Quantity</th>
                                 <th class="p-2"></th>
                                 <th class="p-2"></th>
                             </tr>
@@ -207,50 +221,117 @@ document.addEventListener("DOMContentLoaded", () => {
                     </table>
                 `;
 
-                // Display products
-                getParts().then((products) => {
-                    const productList = document.getElementById("product-list");
-                    productList.innerHTML = products.map(product => `
-                        <tr class="bg-base-300 hover:outline-3 hover:outline-accent rounded-2xl grid grid-cols-5 gap-2 my-2 hover:shadow-lg hover:shadow-accent/50">
-                        <div>
-                            <td class="p-2 flex"><img src="${product.pictureURL}" alt="${product.description}" class="size-10 rounded-lg" /><b class="mx-4">${product.description}</b></td>
-                            <td class="p-2">$${product.price.toFixed(2)}</td>
-                            <td class="p-2">${product.weight.toFixed(2)}</td>
-                            <td class="p-2">${product.quantity}</td>
-                            <td class="p-2">
-                                <input type="number" min="1" max="${product.quantity}" value="1" class="input input-bordered w-16" id="quantity-${product.number}" />
-                                <button class="btn bg-primary hover:bg-accent hover:border-accent hover:border-single hover:border-2 hover:shadow-lg hover:shadow-accent/50 p-2 tooltip tooltip-secondary" id="add-to-cart-${product.number}">Add to Cart</button>
-                            </td>
-                        </div>
-                        </tr>
-                    `).join("");
-                });
+                refreshOrders();
+
+                // Display orders
+                function refreshOrders(query = "") {
+                    getOrders().then((orders) => {
+                        const productList = document.getElementById("product-list");
+                        productList.innerHTML = orders.map(orders => `
+                            <tr class="bg-base-300 hover:outline-3 hover:outline-accent rounded-2xl grid grid-cols-5 gap-2 my-2 hover:shadow-lg hover:shadow-accent/50">
+                            <div>
+                                <td class="p-2">${orders.order_id}</b></td>
+                                <td class="p-2"><b>${orders.customer_name}</b></td>
+                                <td class="p-2">$${(orders.base_price + orders.shipping_price).toFixed(2)}</td>
+                                <td class="p-2">${orders.total_weight.toFixed(2)}</td>
+                                <td class="p-2">
+                                    <button class="btn bg-primary hover:bg-accent hover:border-accent hover:border-single hover:border-2 hover:shadow-lg hover:shadow-accent/50 p-2 tooltip tooltip-secondary" id="complete-${orders.order_id}" num="${orders.order_id}">Complete Order</button>
+                                </td>
+                            </div>
+                            </tr>
+                        `).join("");
+
+                        // Button Functionality
+                        const completeButtons = document.querySelectorAll("[id^='complete-']");
+                        completeButtons.forEach((button) => {
+                            button.addEventListener("click", (event) => {
+                                console.log("clicked");
+                                orderComplete(event.target.getAttribute("num"));
+                            });
+                        });
+                    });
+                }
+            
             break;
             case "receiving":
                 display.innerHTML = `
-                    <h1 class="text-xl font-bold">Receiving</h1>
+                    <h1 class="text-xl font-bold my-4">📦Receiving</h1>
 
-                    <label class="input my-2">
-                    <svg class="h-[1em] opacity-50" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><g stroke-linejoin="round" stroke-linecap="round" stroke-width="2.5" fill="none" stroke="currentColor"><circle cx="11" cy="11" r="8"></circle><path d="m21 21-4.3-4.3"></path></g></svg>
-                    <input type="search" required placeholder="Search"/>
+                    <label class="input input-lg">
+                        <svg class="h-[1em] opacity-50" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24">
+                            <g stroke-linejoin="round" stroke-linecap="round" stroke-width="2.5" fill="none" stroke="currentColor">
+                                <circle cx="11" cy="11" r="8"></circle>
+                                <path d="m21 21-4.3-4.3"></path>
+                            </g>
+                        </svg>
+                        <input type="search" required placeholder="Search" id="product-search" />
                     </label>
 
-                    <div class="card grid grid-cols-1 p-12 gap-2 bg-base-300 border-neutral border-2 h-9/10 overflow-y-auto my-2">
-                        <div class="btn grid grid-cols-2 bg-primary hover:border-accent hover:border-single hover:border-2 hover:shadow-lg hover:shadow-accent/50 p-2 tooltip tooltip-secondary">
-                            <div class="flex gap-2 justify-start items-center">
-                            <h3 class="font-bold truncate text-sm text-left align-center">warehouse label idk</h3>
-                            </div>
-                            <div class="flex gap-2 justify-end items-center">
-                            <p class="opacity-80 p-1 place-self-center text-xs w-16 sm:w-20 bg-base-300 border-neutral border-2 text-center">button</p>
-                            </div>
-                        </div>
-                    </div>
+                    <table class="table-auto w-full my-4">
+                        <thead>
+                            <tr class="bg-primary text-white grid grid-cols-7 rounded-2xl ">
+                                <th class="p-2">Product</th>
+                                <th class="p-2">ID</th>
+                                <th class="p-2">Price</th>
+                                <th class="p-2">Weight</th>
+                                <th class="p-2">In Stock</th>
+                                <th class="p-2"></th>
+                                <th class="p-2"></th>
+                            </tr>
+                        </thead>
+                        <tbody id="product-list">
+                        </tbody>
+                    </table>
                 `;
+
+                refreshProducts();
+
+                // Display products
+                function refreshProducts(query = "") {
+                    getParts(query).then((products) => {
+                        const productList = document.getElementById("product-list");
+                        productList.innerHTML = products.map(product => `
+                            <tr class="bg-base-300 hover:outline-3 hover:outline-accent rounded-2xl grid grid-cols-6 gap-2 my-2 hover:shadow-lg hover:shadow-accent/50">
+                            <div>
+                                <td class="p-2 flex"><img src="${product.pictureURL}" alt="${product.description}" class="size-10 rounded-lg" /><b class="mx-4">${product.description}</b></td>
+                                <td class="p-2">${product.number}</td>
+                                <td class="p-2">$${product.price.toFixed(2)}</td>
+                                <td class="p-2">${product.weight.toFixed(2)}</td>
+                                <td class="p-2">${product.quantity}</td>
+                                <td class="p-2">
+                                    <input type="number" min="1" max="${product.quantity}" value="1" class="input input-bordered w-16" id="quantity-${product.number}" />
+                                    <button class="btn bg-primary hover:bg-accent hover:border-accent hover:border-single hover:border-2 hover:shadow-lg hover:shadow-accent/50 p-2 tooltip tooltip-secondary" id="add-to-cart-${product.number}">Add Inventory</button>
+                                </td>
+                            </div>
+                            </tr>
+                        `).join("");
+                    });
+                }
+
+                // Function for the search bar
+                const searchIn = document.getElementById("product-search");
+                searchIn.addEventListener("input", (event) => {
+                    refreshProducts(event.target.value.trim());
+                });
+
             break;
             case "admin":
                 display.innerHTML = `
+                    <h1 class="text-xl font-bold my-4">🔒Admin Panel</h1>
+
                     <h1 class="text-xl font-bold">Weight Brackets</h1>
-                    This is where the weights things go.
+                    
+                    <table class="table-auto w-full my-4">
+                        <thead>
+                            <tr class="bg-primary text-white grid grid-cols-3 rounded-2xl ">
+                                <th class="p-2">Weight Range</th>
+                                <th class="p-2">Cost</th>
+                                <th class="p-2"></th>
+                            </tr>
+                        </thead>
+                        <tbody id="weight-list">
+                        </tbody>
+                    </table>
                     
                     <i class="text-l">Add Bracket</i>
                     <div class="card grid grid-cols-3 p-4 gap-2 w-1/2">
@@ -259,7 +340,7 @@ document.addEventListener("DOMContentLoaded", () => {
                         <button class="btn">Create</button>
                     </div>
 
-                    <h1 class="text-xl font-bold">Past Orders</h1>
+                    <h1 class="text-xl font-bold">All Orders</h1>
                     <i class="text-m">Filters</i>
 
                     <div class="card grid grid-cols-2 p-4 gap-2 w-1/2">
@@ -294,31 +375,64 @@ document.addEventListener("DOMContentLoaded", () => {
                         </select>
                     </div>
 
-                    <div class="card grid grid-cols-1 p-12 gap-2 bg-base-300 border-neutral border-2 h-9/10 overflow-y-auto">
-                        <div class="btn grid grid-cols-2 bg-primary hover:border-accent hover:border-single hover:border-2 hover:shadow-lg hover:shadow-accent/50 p-2 tooltip tooltip-secondary">
-                            <div class="flex gap-2 justify-start items-center">
-                            <h3 class="font-bold truncate text-sm text-left align-center">warehouse label idk</h3>
-                            </div>
-                            <div class="flex gap-2 justify-end items-center">
-                            <p class="opacity-80 p-1 place-self-center text-xs w-16 sm:w-20 bg-base-300 border-neutral border-2 text-center">button</p>
-                            </div>
-                        </div>
-                    </div>
+                    <table class="table-auto w-full my-4">
+                        <thead>
+                            <tr class="bg-primary text-white grid grid-cols-5 rounded-2xl ">
+                                <th class="p-2">Order ID</th>
+                                <th class="p-2">Status</th>
+                                <th class="p-2">Total</th>
+                                <th class="p-2">Date Ordered</th>
+                                <th class="p-2"></th>
+                            </tr>
+                        </thead>
+                        <tbody id="product-list">
+                        </tbody>
+                    </table>
                 `;
+
+                // getWeights(); no worky :(
+
+                refreshOrders();
+
+                // Display orders
+                function refreshOrders(query = "") {
+                    getAllOrders().then((orders) => {
+                        const productList = document.getElementById("product-list");
+                        productList.innerHTML = orders.map(orders => `
+                            <tr class="bg-base-300 hover:outline-3 hover:outline-accent rounded-2xl grid grid-cols-5 gap-2 my-2 hover:shadow-lg hover:shadow-accent/50">
+                            <div>
+                                <td class="p-2">${orders.order_id}</b></td>
+                                <td class="p-2"><b>${orders.is_complete === 1 ? "Completed" : "Authorized"}</b></td>
+                                <td class="p-2">$${(orders.base_price + orders.shipping_price).toFixed(2)}</td>
+                                <td class="p-2">${orders.date_placed}</td>
+                                <td class="p-2">
+                                    <button class="btn bg-primary hover:bg-accent hover:border-accent hover:border-single hover:border-2 hover:shadow-lg hover:shadow-accent/50 p-2 tooltip tooltip-secondary" id="view-${orders.order_id}">View Order</button>
+                                </td>
+                            </div>
+                            </tr>
+                        `).join("");
+                    });
+                }
+
             break;
             case "cart":
                 display.innerHTML = `
-                    <h1 class="text-xl font-bold">Cart</h1>
-                    <div class="card grid grid-cols-1 p-12 gap-2 bg-base-300 border-neutral border-2 h-9/10 overflow-y-auto my-2">
-                        <div class="btn grid grid-cols-2 bg-primary hover:border-accent hover:border-single hover:border-2 hover:shadow-lg hover:shadow-accent/50 p-2 tooltip tooltip-secondary">
-                            <div class="flex gap-2 justify-start items-center">
-                            <h3 class="font-bold truncate text-sm text-left align-center">cart label idk</h3>
-                            </div>
-                            <div class="flex gap-2 justify-end items-center">
-                            <p class="opacity-80 p-1 place-self-center text-xs w-16 sm:w-20 bg-base-300 border-neutral border-2 text-center">button</p>
-                            </div>
-                        </div>
-                    </div>
+                    <h1 class="text-xl font-bold my-4">🛒Cart</h1>
+                    
+                    <table class="table-auto w-full my-4">
+                        <thead>
+                            <tr class="bg-primary text-white grid grid-cols-6 rounded-2xl ">
+                                <th class="p-2">Product</th>
+                                <th class="p-2">Price</th>
+                                <th class="p-2">Weight</th>
+                                <th class="p-2">Quantity</th>
+                                <th class="p-2"></th>
+                                <th class="p-2"></th>
+                            </tr>
+                        </thead>
+                        <tbody id="product-list">
+                        </tbody>
+                    </table>
                 `;
             break;
             default:
