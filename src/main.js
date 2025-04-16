@@ -138,10 +138,29 @@ document.addEventListener("DOMContentLoaded", () => {
             case "home":
                 display.innerHTML = `
                 <h1 class="text-xl font-bold my-4">🏠Home</h1>
-                    <h1 class="text-xl font-bold text-center">Welcome to Ege Auto Parts</h1>
-                    <img src="images/EGE_AUTO.png" alt="logo" class="rounded-4xl size-64 shadow-secondary/50 outline-secondary outline-double place-self-center my-2">
-                    <i class="text-center">Quality parts for all your auto needs</i>
+
+                    <div class="hero">
+                    <div class="hero-content flex-col lg:flex-row">
+                        <img
+                        src="images/EGE_AUTO.png"
+                        class="max-w-sm rounded-lg shadow-2xl" />
+                        <div>
+                        <h1 class="text-5xl font-bold">Welcome to Ege Auto Parts!</h1>
+                        <p class="py-6">
+                            Quality parts for all your auto needs
+                        </p>
+                        <button id="go-button" class="btn text-white bg-secondary hover:bg-accent hover:border-accent hover:border-single hover:border-2 hover:shadow-lg hover:shadow-accent/50 p-2">Shop Here</button>
+                        </div>
+                    </div>
+                    </div>
                 `;
+
+                // Button to product page.
+                const goButton = document.getElementById("go-button");
+                goButton.addEventListener("click", () => {
+                    updateDisplay("products");
+                });
+
             break;
             case "products":
                 display.innerHTML = `
@@ -184,11 +203,11 @@ document.addEventListener("DOMContentLoaded", () => {
                             <div>
                                 <td class="p-2 flex"><img src="${product.pictureURL}" alt="${product.description}" class="size-10 rounded-lg" /><b class="mx-4">${product.description}</b></td>
                                 <td class="p-2">$${product.price.toFixed(2)}</td>
-                                <td class="p-2">${product.weight.toFixed(2)}</td>
+                                <td class="p-2">${product.weight.toFixed(2)} lbs</td>
                                 <td class="p-2">${product.quantity}</td>
                                 <td class="p-2">
                                     <input type="number" min="1" max="${product.quantity}" value="1" class="input input-bordered w-16" id="quantity-${product.number}" />
-                                    <button class="btn bg-primary hover:bg-accent hover:border-accent hover:border-single hover:border-2 hover:shadow-lg hover:shadow-accent/50 p-2 tooltip tooltip-secondary" id="add-to-cart-${product.number}">Add to Cart</button>
+                                    <button class="btn text-white bg-secondary hover:bg-accent hover:border-accent hover:border-single hover:border-2 hover:shadow-lg hover:shadow-accent/50 p-2" id="add-to-cart-${product.number}">Add to Cart</button>
                                 </td>
                             </div>
                             </tr>
@@ -235,9 +254,9 @@ document.addEventListener("DOMContentLoaded", () => {
                                 <td class="p-2">${orders.order_id}</b></td>
                                 <td class="p-2"><b>${orders.customer_name}</b></td>
                                 <td class="p-2">$${(orders.base_price + orders.shipping_price).toFixed(2)}</td>
-                                <td class="p-2">${orders.total_weight.toFixed(2)}</td>
+                                <td class="p-2">${orders.total_weight.toFixed(2)} lbs</td>
                                 <td class="p-2">
-                                    <button class="btn bg-primary hover:bg-accent hover:border-accent hover:border-single hover:border-2 hover:shadow-lg hover:shadow-accent/50 p-2 tooltip tooltip-secondary" id="complete-${orders.order_id}" num="${orders.order_id}">Complete Order</button>
+                                    <button class="btn text-white bg-secondary hover:bg-accent hover:border-accent hover:border-single hover:border-2 hover:shadow-lg hover:shadow-accent/50 p-2" id="complete-${orders.order_id}" num="${orders.order_id}">Complete Order</button>
                                 </td>
                             </div>
                             </tr>
@@ -299,11 +318,11 @@ document.addEventListener("DOMContentLoaded", () => {
                                 <td class="p-2 flex"><img src="${product.pictureURL}" alt="${product.description}" class="size-10 rounded-lg" /><b class="mx-4">${product.description}</b></td>
                                 <td class="p-2">${product.number}</td>
                                 <td class="p-2">$${product.price.toFixed(2)}</td>
-                                <td class="p-2">${product.weight.toFixed(2)}</td>
+                                <td class="p-2">${product.weight.toFixed(2)} lbs</td>
                                 <td class="p-2">${product.quantity}</td>
                                 <td class="p-2">
                                     <input type="number" min="1" max="${product.quantity}" value="1" class="input input-bordered w-16" id="quantity-${product.number}" />
-                                    <button class="btn bg-primary hover:bg-accent hover:border-accent hover:border-single hover:border-2 hover:shadow-lg hover:shadow-accent/50 p-2 tooltip tooltip-secondary" id="add-to-cart-${product.number}">Add Inventory</button>
+                                    <button class="btn text-white bg-secondary hover:bg-accent hover:border-accent hover:border-single hover:border-2 hover:shadow-lg hover:shadow-accent/50 p-2" id="add-to-cart-${product.number}">Add Inventory</button>
                                 </td>
                             </div>
                             </tr>
@@ -324,11 +343,12 @@ document.addEventListener("DOMContentLoaded", () => {
 
                     <h1 class="text-xl font-bold">Weight Brackets</h1>
                     
-                    <table class="table-auto w-full my-4">
+                    <table class="table-auto my-4 w-132">
                         <thead>
-                            <tr class="bg-primary text-white grid grid-cols-3 rounded-2xl ">
+                            <tr class="bg-primary text-white grid grid-cols-4 rounded-2xl ">
                                 <th class="p-2">Weight Range</th>
                                 <th class="p-2">Cost</th>
+                                <th class="p-2"></th>
                                 <th class="p-2"></th>
                             </tr>
                         </thead>
@@ -338,44 +358,49 @@ document.addEventListener("DOMContentLoaded", () => {
                     
                     <i class="text-l">Add Bracket</i>
                     <div class="card grid grid-cols-3 p-4 gap-2 w-1/2">
-                        <input type="number" placeholder="Weight" class="input" />
-                        <input type="number" placeholder="Cost" class="input" />
-                        <button class="btn">Create</button>
+
+                        <label for="weight" class="input">                           
+                        <span class="label">Weight</span>
+                        <input type="text" id="weight" name ="weight" class=""/></label>
+
+                        <label for="cost" class="input">                           
+                        <span class="label">Cost</span>
+                        <input type="number" id="cost" name ="cost" class=""/></label>
+
+                        <button class="btn text-white bg-secondary hover:bg-accent hover:border-accent hover:border-single hover:border-2 hover:shadow-lg hover:shadow-accent/50 p-2">Create</button>
                     </div>
 
                     <h1 class="text-xl font-bold">All Orders</h1>
                     <i class="text-m">Filters</i>
 
-                    <div class="card grid grid-cols-2 p-4 gap-2 w-1/2">
-                        <button popovertarget="cally-popover1" class="input input-border" id="cally1" style="anchor-name:--cally1">
-                        Start Date
-                        </button>
-                        <div popover id="cally-popover1" class="dropdown bg-base-100 rounded-box shadow-lg" style="position-anchor:--cally1">
-                        <calendar-date class="cally" onchange={document.getElementById('cally1').innerText = this.value}>
-                            <svg aria-label="Previous" class="fill-current size-4" slot="previous" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M15.75 19.5 8.25 12l7.5-7.5"></path></svg>
-                            <svg aria-label="Next" class="fill-current size-4" slot="next" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="m8.25 4.5 7.5 7.5-7.5 7.5"></path></svg>
-                            <calendar-month></calendar-month>
-                        </calendar-date>
-                        </div>
-                        <button popovertarget="cally-popover1" class="input input-border" id="cally1" style="anchor-name:--cally1">
-                        End Date
-                        </button>
-                        <div popover id="cally-popover1" class="dropdown bg-base-100 rounded-box shadow-lg" style="position-anchor:--cally1">
-                        <calendar-date class="cally" onchange={document.getElementById('cally1').innerText = this.value}>
-                            <svg aria-label="Previous" class="fill-current size-4" slot="previous" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M15.75 19.5 8.25 12l7.5-7.5"></path></svg>
-                            <svg aria-label="Next" class="fill-current size-4" slot="next" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="m8.25 4.5 7.5 7.5-7.5 7.5"></path></svg>
-                            <calendar-month></calendar-month>
-                        </calendar-date>
-                        </div>
+                    <div class="card grid grid-cols-2 p-4 gap-2 w-132">
+                    
+                        <label class="input">
+                        <span class="label">Min Date</span>
+                        <input type="date" />
+                        </label>
 
-                        <input type="text" placeholder="Min Prize" class="input" />
-                        <input type="text" placeholder="Max Prize" class="input" />
+                        <label class="input">
+                        <span class="label">Max Date</span>
+                        <input type="date" />
+                        </label>
 
+                        <label for="min-prize" class="input">                           
+                        <span class="label">Min Prize</span>
+                        <input type="text" id="min-prize" name ="min-prize" class=""/></label>
+
+                        <label for="max-prize" class="input">                           
+                        <span class="label">Max Prize</span>
+                        <input type="text" id="max-prize" name ="max-prize" class=""/></label>
+
+                        <label class="select">
+                        <span class="label">Status</span>
                         <select class="select">
-                        <option disabled selected>Order Status</option>
+                        <option selected></option>
                         <option>Authorized</option>
                         <option>Shipped</option>
                         </select>
+                        </label>
                     </div>
 
                     <table class="table-auto w-full my-4">
@@ -393,9 +418,33 @@ document.addEventListener("DOMContentLoaded", () => {
                     </table>
                 `;
 
-                // getWeights(); no worky :(
-
+                refreshWeights();
                 refreshOrders();
+
+                // Display Weights
+                getWeights();
+                function refreshWeights() {
+                    getWeights().then((weights) => {
+                        // Sort weights by minimum_weight in ascending order
+                        weights.sort((a, b) => a.minimum_weight - b.minimum_weight);
+
+                        const weightList = document.getElementById("weight-list");
+                        weightList.innerHTML = weights.map((weight, index) => {
+                            const nextMinWeight = weights[index + 1]?.minimum_weight - 1 || "∞"; // Use the next bracket's minimum or infinity
+                            return `
+                                <tr class="bg-base-300 hover:outline-3 hover:outline-accent rounded-2xl grid grid-cols-3 gap-2 my-2 hover:shadow-lg hover:shadow-accent/50">
+                                <div>
+                                    <td class="p-2">${weight.minimum_weight} lbs to ${nextMinWeight} lbs</b></td>
+                                    <td class="p-2"><b>$${weight.shipping_price.toFixed(2)}</b></td>
+                                    <td class="p-2">
+                                        <button class="btn text-white bg-secondary hover:bg-accent hover:border-accent hover:border-single hover:border-2 hover:shadow-lg hover:shadow-accent/50 p-2" id="delete-${weight.weight_bracket_id}" num="${weight.weight_bracket_id}">Delete</button>
+                                    </td>
+                                </div>
+                                </tr>
+                            `;
+                        }).join("");
+                    });
+                }
 
                 // Display orders
                 function refreshOrders(query = "") {
@@ -409,7 +458,7 @@ document.addEventListener("DOMContentLoaded", () => {
                                 <td class="p-2">$${(orders.base_price + orders.shipping_price).toFixed(2)}</td>
                                 <td class="p-2">${orders.date_placed}</td>
                                 <td class="p-2">
-                                    <button class="btn bg-primary hover:bg-accent hover:border-accent hover:border-single hover:border-2 hover:shadow-lg hover:shadow-accent/50 p-2 tooltip tooltip-secondary" id="view-${orders.order_id}">View Order</button>
+                                    <button class="btn bg-secondary text-white hover:bg-accent hover:border-accent hover:border-single hover:border-2 hover:shadow-lg hover:shadow-accent/50 p-2" id="view-${orders.order_id}">View Order</button>
                                 </td>
                             </div>
                             </tr>
@@ -422,7 +471,7 @@ document.addEventListener("DOMContentLoaded", () => {
                 display.innerHTML = `
                     <h1 class="text-xl font-bold my-4">🛒Cart</h1>
                     
-                    <table class="table-auto w-full my-4">
+                    <table class="table-auto w-1/2 my-4">
                         <thead>
                             <tr class="bg-primary text-white grid grid-cols-6 rounded-2xl ">
                                 <th class="p-2">Product</th>
@@ -436,13 +485,34 @@ document.addEventListener("DOMContentLoaded", () => {
                         <tbody id="product-list">
                         </tbody>
                     </table>
-                    <form id="checkout">
-                        <label for="credit-card">Credit Card:</label> <input type="text" id="credit-card" name ="credit-card"/><br>
-                        <label for="expiration-date">Expiration Date:</label> <input type="text" id="expiration-date" name="expiration-date" required/><br>
-                        <label for="name">Name:</label> <input type="text" id="name" name="name" required oninvalid="this.setCustomValidity('Please enter your name')" oninput="this.setCustomValidity('')"/><br>
-                        <label for="email">E-mail:</label> <input type="text" id="email" name="email"/><br>
-                        <label for="address">Address:</label> <input type="text" id="address" name="address"/><br>
-                        <button type="submit">Submit</button>
+
+                    <h1 class="text-xl font-bold">Checkout</h1>
+
+                    <form id="checkout" class="">
+                        <div class="card grid grid-cols-1 p-4 gap-2 w-1/2">
+
+                            <label for="name" class="input">
+                            <span class="label">Name</span>
+                            <input type="text" id="name" name="name" class="" required oninvalid="this.setCustomValidity('Please enter your name')" oninput="this.setCustomValidity('')"/></label> 
+
+                            <label for="credit-card" class="input">                           
+                            <span class="label">Credit Card #</span>
+                            <input type="text" id="credit-card" name ="credit-card" class=""/></label>
+
+                            <label for="expiration-date" class="input">
+                            <span class="label">Expiration Date</span>
+                            <input type="text" id="expiration-date" name="expiration-date" class="" required/></label>
+                            
+                            <label for="email" class="input">
+                             <span class="label">E-mail</span>
+                            <input type="text" id="email" name="email" class=""/></label> 
+                            
+                            <label for="address" class="input">
+                             <span class="label">Address</span>
+                            <input type="text" id="address" name="address" class=""/></label> 
+                            
+                            <button type="submit" class="btn text-white bg-secondary hover:bg-accent hover:border-accent hover:border-single hover:border-2 hover:shadow-lg hover:shadow-accent/50 p-2 w-1/3">Submit</button>
+                        </div>
                     </form>
                 `;
                 document.querySelector("#checkout").addEventListener("submit", checkoutHandler);
