@@ -40,7 +40,9 @@ document.addEventListener("DOMContentLoaded", () => {
 
     // Gets all Weight Brackets for admin page. Doesnt seem to work yet.
     async function orderComplete(order) {
-        const res = await fetch(`/api/orders/${order}/complete`);
+        const res = await fetch(`/api/orders/${order}/complete`, {
+            method: "POST"
+          });
         const data = await res.json();
         console.log(`/api/orders/${order}/complete`);
         return data;
@@ -246,8 +248,8 @@ document.addEventListener("DOMContentLoaded", () => {
                         completeButtons.forEach((button) => {
                             button.addEventListener("click", (event) => {
                                 console.log("clicked");
-                                refreshOrder();
                                 orderComplete(event.target.getAttribute("num"));
+                                setTimeout(() => { refreshOrder(); }, 250); // Slight delay to give time for db to update
                             });
                         });
                     });
