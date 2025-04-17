@@ -23,8 +23,8 @@ document.addEventListener("DOMContentLoaded", () => {
     }
 
     // Gets all orders for admin page.
-    async function getAllOrders() {
-        const res = await fetch(`/api/orders`);
+    async function getAllOrders(query) {
+        const res = await fetch(`/api/orders/${query !== undefined ? query : ""}`);
         const data = await res.json();
         console.log(data);
         return data;
@@ -38,7 +38,7 @@ document.addEventListener("DOMContentLoaded", () => {
         return data;
     }
 
-    // Gets all Weight Brackets for admin page. Doesnt seem to work yet.
+    // Sets order to complete.
     async function orderComplete(order) {
         const res = await fetch(`/api/orders/${order}/complete`, {
             method: "POST"
@@ -47,6 +47,48 @@ document.addEventListener("DOMContentLoaded", () => {
         console.log(`/api/orders/${order}/complete`);
         return data;
     }
+
+    // This endpoint updates the quantity of a single part
+    async function addParts(order,num) {
+    const res = await fetch(`/api/parts/${order}`, {
+      method: "POST",
+      headers: {
+        Accept: "application/json",
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        quantity: num,
+      }),
+    });
+    const data = await res.json();
+    console.log(data);
+  }
+
+    // Creates a weight bracket
+    async function addWeight(minimum_weight, shipping_price) {
+        try {
+            await make_query(
+                OUR_DB_URL,
+                `INSERT INTO weight_brackets 
+                (minimum_weight, shipping_price) VALUES
+                ('${minimum_weight}', '${shipping_price}')`
+            );
+            return { success: true };
+        } catch (error) {
+            return { success: false, error };
+        }
+    }
+
+    // DELETE /api/weight-brackets/[weight-bracket-ID]
+    async function deleteWeight(order) {
+        const res = await fetch(`/api/weight-brackets/${order}`, {
+            method: "POST"
+          });
+        const data = await res.json();
+        console.log(`${order}`);
+        return data;
+    }
+    
 
     // This is some starter code for processing a checkout.
     // This function should run when the user clicks "submit"
@@ -322,11 +364,26 @@ document.addEventListener("DOMContentLoaded", () => {
                                 <td class="p-2">${product.quantity}</td>
                                 <td class="p-2">
                                     <input type="number" min="1" max="${product.quantity}" value="1" class="input input-bordered w-16" id="quantity-${product.number}" />
-                                    <button class="btn text-white bg-secondary hover:bg-accent hover:border-accent hover:border-single hover:border-2 hover:shadow-lg hover:shadow-accent/50 p-2" id="add-to-cart-${product.number}">Add Inventory</button>
+                                    <button class="btn text-white bg-secondary hover:bg-accent hover:border-accent hover:border-single hover:border-2 hover:shadow-lg hover:shadow-accent/50 p-2" id="add-to-cart-${product.number}" q="${product.quantity}" num="${product.number}">Add Inventory</button>
                                 </td>
                             </div>
                             </tr>
                         `).join("");
+
+                        // Button Functionality
+                        const completeButtons = document.querySelectorAll("[id^='add-to-cart-']");
+                        completeButtons.forEach((button) => {
+                            button.addEventListener("click", (event) => {
+                                console.log("clicked");
+                                const order = event.target.getAttribute("num");           
+                                const input = document.getElementById(`quantity-${order}`).value;
+                                const q = event.target.getAttribute("q"); 
+                                const num = Number(input) + Number(q);
+                                addParts(order,num);
+                                setTimeout(() => { refreshProducts(); }, 250); // Slight delay to give time for db to update
+                            });
+                        });
+                        
                     });
                 }
 
@@ -361,13 +418,13 @@ document.addEventListener("DOMContentLoaded", () => {
 
                         <label for="weight" class="input">                           
                         <span class="label">Weight</span>
-                        <input type="text" id="weight" name ="weight" class=""/></label>
+                        <input type="number" id="weight" name ="weight" class=""/></label>
 
                         <label for="cost" class="input">                           
                         <span class="label">Cost</span>
                         <input type="number" id="cost" name ="cost" class=""/></label>
 
-                        <button class="btn text-white bg-secondary hover:bg-accent hover:border-accent hover:border-single hover:border-2 hover:shadow-lg hover:shadow-accent/50 p-2">Create</button>
+                        <button class="btn text-white bg-secondary hover:bg-accent hover:border-accent hover:border-single hover:border-2 hover:shadow-lg hover:shadow-accent/50 p-2" id="create-button">Create</button>
                     </div>
 
                     <h1 class="text-xl font-bold">All Orders</h1>
@@ -377,12 +434,12 @@ document.addEventListener("DOMContentLoaded", () => {
                     
                         <label class="input">
                         <span class="label">Min Date</span>
-                        <input type="date" />
+                        <input type="date" id="min-date"/>
                         </label>
 
                         <label class="input">
                         <span class="label">Max Date</span>
-                        <input type="date" />
+                        <input type="date" id="max-date"/>
                         </label>
 
                         <label for="min-prize" class="input">                           
@@ -401,11 +458,13 @@ document.addEventListener("DOMContentLoaded", () => {
                         <option>Shipped</option>
                         </select>
                         </label>
+
+                        <button class="btn text-white bg-secondary hover:bg-accent hover:border-accent hover:border-single hover:border-2 hover:shadow-lg hover:shadow-accent/50 p-2" id="filter-button">Filter</button>
                     </div>
 
                     <table class="table-auto w-full my-4">
                         <thead>
-                            <tr class="bg-primary text-white grid grid-cols-5 rounded-2xl ">
+                            <tr class="bg-primary text-white grid grid-cols-5 rounded-2xl" id="status">
                                 <th class="p-2">Order ID</th>
                                 <th class="p-2">Status</th>
                                 <th class="p-2">Total</th>
@@ -443,12 +502,57 @@ document.addEventListener("DOMContentLoaded", () => {
                                 </tr>
                             `;
                         }).join("");
+
+                        const deleteButtons = document.querySelectorAll("[id^='delete-']");
+                        deleteButtons.forEach((button) => {
+                            button.addEventListener("click", (event) => {
+                                console.log("clicked");
+                                const order = event.target.getAttribute("num");           
+                                deleteWeight(order);
+                                setTimeout(() => { refreshWeights(); }, 250); // Slight delay to give time for db to update
+                            });
+                        });
+
                     });
                 }
 
+                // Create Bracket
+                const createButton = document.getElementById("create-button");
+                createButton.addEventListener("click", () => {
+                    const weight = document.getElementById("weight").value;
+                    const cost = document.getElementById("cost").value;
+                    addWeight(weight,cost);
+                    setTimeout(() => { refreshWeights(); }, 250); // Slight delay to give time for db to update
+                });
+
+                // Sorting functionality
+                const minDate = document.querySelector("#min-date");
+                const maxDate = document.querySelector("#max-date");
+                const minPrize = document.querySelector("#min-prize");
+                const maxPrize = document.querySelector("#max-prize");
+                const status = document.querySelector("#status");
+                const filterButton = document.getElementById("filter-button");
+                filterButton.addEventListener("click", () => {
+                    const minDateValue = minDate.value;
+                    const maxDateValue = maxDate.value;
+                    const minPrizeValue = minPrize.value;
+                    const maxPrizeValue = maxPrize.value;
+                    const statusValue = status.value;
+
+                    let query = `?`;
+                    if (minDateValue) query += `lowDate=${minDateValue}&`;
+                    if (maxDateValue) query += `highDate=${maxDateValue}&`;
+                    if (minPrizeValue) query += `lowPrice=${minPrizeValue}&`;
+                    if (maxPrizeValue) query += `highPrice=${maxPrizeValue}&`;
+                    if (statusValue) query += `status=${statusValue}&`;
+
+                    console.log(query);
+                    refreshOrders(query);
+                });
+                
                 // Display orders
                 function refreshOrders(query = "") {
-                    getAllOrders().then((orders) => {
+                    getAllOrders(query).then((orders) => {
                         const productList = document.getElementById("product-list");
                         productList.innerHTML = orders.map(orders => `
                             <tr class="bg-base-300 hover:outline-3 hover:outline-accent rounded-2xl grid grid-cols-5 gap-2 my-2 hover:shadow-lg hover:shadow-accent/50">
@@ -458,12 +562,56 @@ document.addEventListener("DOMContentLoaded", () => {
                                 <td class="p-2">$${(orders.base_price + orders.shipping_price).toFixed(2)}</td>
                                 <td class="p-2">${orders.date_placed}</td>
                                 <td class="p-2">
-                                    <button class="btn bg-secondary text-white hover:bg-accent hover:border-accent hover:border-single hover:border-2 hover:shadow-lg hover:shadow-accent/50 p-2" id="view-${orders.order_id}">View Order</button>
+                                    <button class="btn bg-secondary text-white hover:bg-accent hover:border-accent hover:border-single hover:border-2 hover:shadow-lg hover:shadow-accent/50 p-2" id="view-${orders.order_id}" num="${orders.order_id}">View Order</button>
                                 </td>
                             </div>
                             </tr>
                         `).join("");
-                    });
+
+                    // View Order
+                    const viewOrder = document.querySelectorAll("[id^='view-']");
+                    viewOrder.forEach((button) => {
+                        button.addEventListener("click", (event) => {
+                            
+                            const order = event.target.getAttribute("num");    
+                            console.log(order);
+                            Selectorder = getAllOrders(order).then((orders) => {
+                                if (Selectorder) {
+                                    display.innerHTML = `
+                                        <h1 class="text-xl font-bold my-4">📦 Order Details</h1>
+                                        <p><strong>Order ID:</strong> ${orders.order_id}</p>
+                                        <p><strong>Customer Name:</strong> ${orders.customer_name}</p>
+                                        <p><strong>Status:</strong> ${orders.is_complete === 1 ? "Completed" : "Authorized"}</p>
+                                        <p><strong>Total Price:</strong> $${(orders.base_price + orders.shipping_price).toFixed(2)}</p>
+                                        <p><strong>Total Weight:</strong> ${orders.total_weight.toFixed(2)} lbs</p>
+                                        <p><strong>Date Placed:</strong> ${orders.date_placed}</p>
+                                        <p><strong>Shipping Address:</strong> ${orders.mailing_address}</p>
+                                        <p><strong>E-mail:</strong> ${orders.email}</p>
+                                        <p><strong>Authorization:</strong> ${orders.authorization_number}</p>
+                                        ${orders.items.map(item => `
+                                            <div class="bg-base-300 hover:outline-3 hover:outline-accent rounded-2xl grid grid-cols-4 gap-2 my-2 hover:shadow-lg hover:shadow-accent/50">
+                                            <p class="mx-4"><strong>Part ID:</strong> ${item.part_id}</p>
+                                            <p><strong>Description:</strong> ${item.description}</p>
+                                            <p><strong>Amount Ordered:</strong> ${item.amount_ordered}</p>
+                                            <p><strong>Weight:</strong> ${item.weight}</p>
+                                            </div>
+                                        `).join("")}
+                                       
+                                        <button class="btn text-white bg-secondary hover:bg-accent hover:border-accent hover:border-single hover:border-2 hover:shadow-lg hover:shadow-accent/50 p-2 mt-4" id="back-button">Back</button>
+                                    `;
+
+                                    const backButton = document.getElementById("back-button");
+                                    backButton.addEventListener("click", () => {
+                                        updateDisplay("admin");
+                                    });
+                                } else {
+                                    console.error("Order not found");
+                                }
+                            });
+                        });
+                            });
+                        });
+                  
                 }
 
             break;
