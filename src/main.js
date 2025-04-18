@@ -66,24 +66,26 @@ document.addEventListener("DOMContentLoaded", () => {
 
     // Creates a weight bracket
     async function addWeight(minimum_weight, shipping_price) {
-        try {
-            await make_query(
-                OUR_DB_URL,
-                `INSERT INTO weight_brackets 
-                (minimum_weight, shipping_price) VALUES
-                ('${minimum_weight}', '${shipping_price}')`
-            );
-            return { success: true };
-        } catch (error) {
-            return { success: false, error };
-        }
+        const res = await fetch(`/api/weight-brackets`, {
+            method: "POST",
+            headers: {
+                Accept: "application/json",
+                "Content-Type": "application/json",
+            },
+            body: JSON.stringify({
+                minimum_weight,
+                shipping_price,
+            }),
+        });
+        const data = await res.json();
+        return data;
     }
 
     // DELETE /api/weight-brackets/[weight-bracket-ID]
     async function deleteWeight(order) {
         const res = await fetch(`/api/weight-brackets/${order}`, {
-            method: "POST"
-          });
+            method: "DELETE"
+        });
         const data = await res.json();
         console.log(`${order}`);
         return data;
