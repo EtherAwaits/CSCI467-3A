@@ -191,7 +191,7 @@ document.addEventListener("DOMContentLoaded", () => {
                         </tbody>
                     </table>
                 `;
-
+                // CART AREA
                 refreshProduct(); 
 
                 // Display products
@@ -212,7 +212,47 @@ document.addEventListener("DOMContentLoaded", () => {
                             </div>
                             </tr>
                         `).join("");
+                        // Button Functionality
+                        const add_to_cart_btn = document.querySelectorAll("[id^='add-to-cart-']");
+                        add_to_cart_btn.forEach((button) => {
+                            button.addEventListener("click", (event) => {
+
+                                // get the index of the button
+                                const id = event.target.id; // "add-to-cart-##"
+                                let index = parseInt(id.split("add-to-cart-")[1], 10);
+                                console.log(index); // log the index
+
+                                //  get the number from the quantity field
+                                const qty2 = document.getElementById("quantity-2");
+                                const ordQuantity = parseInt(qty2.value, 10);
+
+
+                                localStorage.setItem("item", products[index-1].description);
+                                localStorage.setItem("quantity", ordQuantity);
+                                const name = localStorage.getItem("item");
+                                const qty = localStorage.getItem("quantity");
+
+                                console.log(name);
+                                console.log(qty);
+
+                                let cart = [
+                                    { id: 1, name, qty}
+                                ];
+                                localStorage.setItem("cart", JSON.stringify(cart));
+
+                                const storedCart = JSON.parse(localStorage.getItem("cart"));
+                                console.log(storedCart[0].name); // "Sprocket"
+
+                                //orderComplete(event.target.getAttribute("num"));
+                                
+                                //write calls to local storage here.
+                                
+                            });
+                        });
                     });
+
+
+
                 }
 
                 // Function for the search bar
