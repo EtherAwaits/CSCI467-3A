@@ -90,61 +90,6 @@ document.addEventListener("DOMContentLoaded", () => {
         console.log(`${order}`);
         return data;
     }
-    
-
-    // This is some starter code for processing a checkout.
-    // This function should run when the user clicks "submit"
-    // on the checkout form (see addEventListener call below).
-    async function checkoutHandler(event) {
-        // Ensures that the page does not refresh when we submit.
-        event.preventDefault();
-
-        // Note that the "#credit-card" here means that "credit-card"
-        // is the name of the ID on a text <input /> field. These lines
-        // get whatever value has currently been typed into the input
-        // fields by the user (assuming that you've put id="credit-card",
-        // id="expiration-date", etc. on the <input /> tags)
-        const creditCard = document.querySelector("#credit-card").value;
-        const expDate = document.querySelector("#expiration-date").value;
-        const name = document.querySelector("#name").value;
-        const email = document.querySelector("#email").value;
-        const address = document.querySelector("#address").value;
-
-        // Now we actually make the call to our backend using
-        // the data that was typed into the form.
-        const result = await fetch(`/api/checkout`, {
-            method: "POST",
-            headers: {
-            Accept: "application/json",
-            "Content-Type": "application/json",
-            },
-            body: JSON.stringify({
-                cc: creditCard,
-                exp: expDate,
-                name: name,
-                email: email,
-                address: address,
-
-                // The items that they are purchasing are currently
-                // hardcoded. Once we've implemented the cart, 
-                // this will change.
-                items: [
-                  {
-                    part_id: 104,
-                    amount_ordered: 1,
-                  },
-                  {
-                    part_id: 105,
-                    amount_ordered: 4,
-                  },
-                ],
-              }),
-        });
-
-        // This just checks that our endpoint did something
-        const content = await result.json();
-        console.log(content)
-    }
 
     // Assuming that you have a form with an id of checkout, this will call
     // the checkoutHandler function when the user clicks submit.
@@ -171,10 +116,10 @@ document.addEventListener("DOMContentLoaded", () => {
     // Handle tab switching
     tabs.forEach((tab) => {
     tab.addEventListener("click", () => {
-      const tabName = tab.getAttribute("tab-data");
-      updateDisplay(tabName);
+            const tabName = tab.getAttribute("tab-data");
+            updateDisplay(tabName);
+        });
     });
-  });
 
     // Update the display based on the tab
     function updateDisplay(tabName) {
@@ -263,26 +208,36 @@ document.addEventListener("DOMContentLoaded", () => {
 
                                 // get the index of the button
                                 const id = event.target.id; // "add-to-cart-##"
-                                let index = parseInt(id.split("add-to-cart-")[1], 10);
+                                const index = parseInt(id.split("add-to-cart-")[1], 10);
                                 console.log(index); // log the index
 
                                 //  get the number from the quantity field
-                                const qty2 = document.getElementById("quantity-2");
+                                const qty2 = document.getElementById(`quantity-${index}`);
                                 const ordQuantity = parseInt(qty2.value, 10);
 
+                                // Get the product info
+                                const product = products.find(product => product.number == index);
 
-                                localStorage.setItem("item", products[index-1].description);
-                                localStorage.setItem("quantity", ordQuantity);
-                                const name = localStorage.getItem("item");
-                                const qty = localStorage.getItem("quantity");
+                                // localStorage.setItem("item", product.description);
+                                // localStorage.setItem("quantity", ordQuantity);
+                                // const name = localStorage.getItem("item");
+                                // const qty = localStorage.getItem("quantity");
 
-                                console.log(name);
-                                console.log(qty);
+                                // console.log(name);
+                                // console.log(qty);
 
-                                let cart = [
-                                    { id: 1, name, qty}
-                                ];
-                                localStorage.setItem("cart", JSON.stringify(cart));
+                                const prevCart = JSON.parse(localStorage.getItem("cart") ?? "[]");
+
+                                const currCart = prevCart.find(cartItem => cartItem.id === index)
+                                    // If the item is already present, just update the new quantity
+                                    ? prevCart.map(cartItem => cartItem.id === index
+                                        ? ({ ...cartItem, quantity: cartItem.quantity + ordQuantity})
+                                        : cartItem
+                                      )
+                                    // Otherwise, create a new item
+                                    : [...prevCart, { id: index, name: product.description, quantity: ordQuantity}]
+
+                                localStorage.setItem("cart", JSON.stringify(currCart));
 
                                 const storedCart = JSON.parse(localStorage.getItem("cart"));
                                 console.log(storedCart[0].name); // "Sprocket"
@@ -672,8 +627,7 @@ document.addEventListener("DOMContentLoaded", () => {
                                 <th class="p-2"></th>
                             </tr>
                         </thead>
-                        <tbody id="product-list">
-                        </tbody>
+                        <tbody id="product-list"></tbody>
                     </table>
 
                     <h1 class="text-xl font-bold">Checkout</h1>
@@ -705,6 +659,97 @@ document.addEventListener("DOMContentLoaded", () => {
                         </div>
                     </form>
                 `;
+
+                function refreshCart() {
+                    getParts().then((products) => {
+                        const productList = document.getElementById("product-list");
+                        productList.innerHTML = JSON.parse(localStorage.getItem("cart") ?? "[]").map(cartItem => {
+
+                            const part = products.find(product => product.number === cartItem.id);
+                            if (!part) return `<tr class="bg-base-300 hover:outline-3 hover:outline-accent rounded-2xl grid grid-cols-5 gap-2 my-2 hover:shadow-lg hover:shadow-accent/50"><div><td class="p-2">Error: Cart item not in parts query</td></div></tr>`;
+
+                            return `<tr class="bg-base-300 hover:outline-3 hover:outline-accent rounded-2xl grid grid-cols-5 gap-2 my-2 hover:shadow-lg hover:shadow-accent/50">
+                                        <div>
+                                            <td class="p-2">${part.description}</td>
+                                            <td class="p-2">$${part.price.toFixed(2)}</td>
+                                            <td class="p-2">${part.weight.toFixed(2)} lbs</td>
+                                            <td class="p-2">${cartItem.quantity}</td>
+                                            <td class="p-2">
+                                                <button class="btn text-white bg-secondary hover:bg-accent hover:border-accent hover:border-single hover:border-2 hover:shadow-lg hover:shadow-accent/50 p-2" id="remove-from-cart-${cartItem.id}">Remove</button>
+                                            </td>
+                                        </div>
+                                    </tr>
+                        `}).join("");
+                        
+                        document.querySelectorAll("[id^='remove-from-cart-']").forEach(btn => btn.addEventListener("click", 
+                            (e) => {
+                                const id = e.target.id.split("remove-from-cart-")[1];
+
+                                const prevCart = JSON.parse(localStorage.getItem("cart") ?? "[]");
+                                const newCart = prevCart.filter(cartItem => cartItem.id !== Number(id));
+                                
+                                localStorage.setItem("cart", JSON.stringify(newCart));
+                                
+                                refreshCart();
+                            }
+                        ));
+                    })
+                }
+
+                // This is some starter code for processing a checkout.
+                // This function should run when the user clicks "submit"
+                // on the checkout form (see addEventListener call below).
+                async function checkoutHandler(event) {
+                    // Ensures that the page does not refresh when we submit.
+                    event.preventDefault();
+
+                    // Note that the "#credit-card" here means that "credit-card"
+                    // is the name of the ID on a text <input /> field. These lines
+                    // get whatever value has currently been typed into the input
+                    // fields by the user (assuming that you've put id="credit-card",
+                    // id="expiration-date", etc. on the <input /> tags)
+                    const creditCard = document.querySelector("#credit-card").value;
+                    const expDate = document.querySelector("#expiration-date").value;
+                    const name = document.querySelector("#name").value;
+                    const email = document.querySelector("#email").value;
+                    const address = document.querySelector("#address").value;
+
+                    const cart = JSON.parse(localStorage.getItem("cart") ?? "[]");
+                    if (!Array.isArray(cart) || cart.length < 1) return;
+
+                    // Now we actually make the call to our backend using
+                    // the data that was typed into the form.
+                    const result = await fetch(`/api/checkout`, {
+                        method: "POST",
+                        headers: {
+                        Accept: "application/json",
+                        "Content-Type": "application/json",
+                        },
+                        body: JSON.stringify({
+                            cc: creditCard,
+                            exp: expDate,
+                            name: name,
+                            email: email,
+                            address: address,
+                            items: cart.map(cartItem => ({
+                                part_id: cartItem.id,
+                                amount_ordered: cartItem.quantity
+                            }))
+                        }),
+                    });
+
+                    // This just checks that our endpoint did something
+                    const content = await result.json();
+
+                    localStorage.removeItem("cart");
+                    refreshCart();
+
+
+                    console.log(content);
+                }
+
+                refreshCart();
+
                 document.querySelector("#checkout").addEventListener("submit", checkoutHandler);
 
                 /*
