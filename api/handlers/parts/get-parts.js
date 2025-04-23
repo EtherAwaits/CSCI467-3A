@@ -48,17 +48,21 @@ module.exports = asyncHandler(async (req, res) => {
     // If we don't have quantities for any of the parts we found,
     // we should create them. This ensures that our database
     // remains in sync with the legacy database.
-    await make_query_with_con(
-      our_db_con,
-      `INSERT IGNORE INTO part_quantities (part_id) VALUES ${insertStr}`
-    );
+    if (parts.length) {
+      await make_query_with_con(
+        our_db_con,
+        `INSERT IGNORE INTO part_quantities (part_id) VALUES ${insertStr}`
+      );
+    }
 
     // Retrieve all of the part quantities for the parts that
     // we retrieved from the legacy database.
-    const quantities = await make_query_with_con(
-      our_db_con,
-      `SELECT * FROM part_quantities WHERE part_id IN ${queryStr}`
-    );
+    const quantities = parts.length > 0 
+      ? await make_query_with_con(
+          our_db_con,
+          `SELECT * FROM part_quantities WHERE part_id IN ${queryStr}`
+        ) 
+      : [];
 
     // Merges the parts with the quantities.
     // Slightly inefficient because O(n^2), but this method guarantees success.
@@ -73,7 +77,7 @@ module.exports = asyncHandler(async (req, res) => {
     res.status(200);
     res.json(partsWithQuantities);
   } catch (error) {
-    res.status(500);
+    res.status(400);
     res.json({ error });
   }
 });
