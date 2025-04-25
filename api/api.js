@@ -53,4 +53,10 @@ module.exports = (app) => {
 
   // This is in its own category, although it does create an order.
   app.post("/api/checkout", require("./handlers/checkout"));
+
+  //
+  //  FILE ENDPOINTS
+  //
+
+  app.get("/invoices/:orderID", require("./files/invoice"));
 };

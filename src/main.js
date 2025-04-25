@@ -267,11 +267,12 @@ document.addEventListener("DOMContentLoaded", () => {
                     
                     <table class="table-auto w-full my-4">
                         <thead>
-                            <tr class="bg-primary text-white grid grid-cols-6 rounded-2xl ">
+                            <tr class="bg-primary text-white grid grid-cols-7 rounded-2xl ">
                                 <th class="p-2">Order ID</th>
                                 <th class="p-2">Customer</th>
                                 <th class="p-2">Total</th>
                                 <th class="p-2">Weight</th>
+                                <th class="p-2"></th>
                                 <th class="p-2"></th>
                                 <th class="p-2"></th>
                             </tr>
@@ -288,7 +289,7 @@ document.addEventListener("DOMContentLoaded", () => {
                     getOrders().then((orders) => {
                         const productList = document.getElementById("product-list");
                         productList.innerHTML = orders.map(orders => `
-                            <tr class="bg-base-300 hover:outline-3 hover:outline-accent rounded-2xl grid grid-cols-5 gap-2 my-2 hover:shadow-lg hover:shadow-accent/50">
+                            <tr class="bg-base-300 hover:outline-3 hover:outline-accent rounded-2xl grid grid-cols-6 gap-2 my-2 hover:shadow-lg hover:shadow-accent/50">
                             <div>
                                 <td class="p-2">${orders.order_id}</b></td>
                                 <td class="p-2"><b>${orders.customer_name}</b></td>
@@ -296,6 +297,9 @@ document.addEventListener("DOMContentLoaded", () => {
                                 <td class="p-2">${orders.total_weight.toFixed(2)} lbs</td>
                                 <td class="p-2">
                                     <button class="btn text-white bg-secondary hover:bg-accent hover:border-accent hover:border-single hover:border-2 hover:shadow-lg hover:shadow-accent/50 p-2" id="complete-${orders.order_id}" num="${orders.order_id}">Complete Order</button>
+                                </td>
+                                <td class="p-2">
+                                    <button class="btn text-white bg-secondary hover:bg-accent hover:border-accent hover:border-single hover:border-2 hover:shadow-lg hover:shadow-accent/50 p-2" id="invoice-${orders.order_id}" num="${orders.order_id}">Print Invoice</button>
                                 </td>
                             </div>
                             </tr>
@@ -310,6 +314,54 @@ document.addEventListener("DOMContentLoaded", () => {
                                 setTimeout(() => { refreshOrder(); }, 250); // Slight delay to give time for db to update
                             });
                         });
+
+                        // Invoice Button
+                        const invoiceButtons = document.querySelectorAll("[id^='invoice-']");
+                        invoiceButtons.forEach(button => {
+                            button.addEventListener("click", (event) => {
+                                const id = event.target.getAttribute("num");
+
+                                getAllOrders(id).then(order => {
+                                    let invoice = `
+                                        <h1 align='center'>Invoice</h1>
+                                        <p align='center'>Ege Auto Parts</p>
+                                        <p align='center'>For Order ID ${id}</p>
+                                        <table>
+                                            <tr>
+                                                <th align='right'>Product</th>
+                                                <th align='right'>Qty</th>
+                                                <th align='right'>Rate</th>
+                                                <th align='right'>Amount</th>
+                                            </tr>
+                                    `;
+
+                                    order.items.forEach(part => {
+                                        const partTotal = Math.round(part.price * part.amount_ordered * 100) / 100;
+                                        const strPartTotal = `$${partTotal.toFixed(2)}`;
+                                        invoice += `<tr><td align='right' width='300px'>${part.description}</td><td align='right' width='50px'>${part.amount_ordered}</td><td align='right' width='100px'>$${part.price.toFixed(2)}</td><td align='right' width='100px'>${strPartTotal}</td></tr>`;
+                                    });
+
+                                    invoice += `<tr><td><br></td></tr>`
+
+                                    invoice += `<tr><td></td><td></td><td align='right' width='100px'>Subtotal:</td><td align='right'>$${order.base_price.toFixed(2)}</td></tr>`;
+                                    invoice += `<tr><td></td><td></td><td align='right' width='100px'>Shipping:</td><td width='100px' align='right'>$${order.shipping_price.toFixed(2)}</td></tr>`;
+                                    invoice += `<tr><td></td><td></td><td align='right' width='100px'>Total:</td><td width='100px' align='right'>$${(order.base_price + order.shipping_price).toFixed(2)}</td></tr></table>`;
+
+                                    const iframe = document.createElement('iframe');
+
+                                    iframe.onload = () => {
+                                        const doc = iframe.contentDocument ? iframe.contentDocument : iframe.contentWindow.document;
+                                        doc.getElementsByTagName('body')[0].innerHTML = invoice;
+
+                                        iframe.contentWindow.focus(); // This is key, the iframe must have focus first
+                                        iframe.contentWindow.print();
+                                    }
+
+                                    document.getElementsByTagName('body')[0].appendChild(iframe);
+                                    iframe.remove();
+                                })
+                            })
+                        })
                     });
                 }
             
