@@ -1,6 +1,35 @@
 const { OUR_DB_URL, LEGACY_DB_INFO, make_query } = require("../../db.js");
 const { asyncHandler } = require("../utils.js");
 const uuid = require("uuid");
+const nodemailer = require('nodemailer');
+const dotenv = require("dotenv").config();
+
+const transporter = nodemailer.createTransport({
+  host: 'smtp.zoho.com',
+  port: '465',
+  secure: true, // true for 465, false for other ports
+  auth: {
+    user: "autoparts467",
+    pass: dotenv.parsed.EMAIL_PASSWORD, 
+  },
+});
+
+const send = (to, content, subject) => {
+  return new Promise((resolve, reject) => {
+    if (!content) return reject(new Error('fail because mail content was empty'));
+      const options =  {
+        from: "autoparts467@zohomail.com",
+        to,
+        subject,
+        text: '', // plain text body
+        html: content, // html body
+      };
+      return transporter.sendMail(options, (error, info) => {
+        if (error) return reject(error);
+        return resolve(info);
+      });
+    });
+};
 
 // POST /api/checkout
 // Takes in credit card info along with a JSON array of
@@ -159,6 +188,7 @@ module.exports = asyncHandler(async (req, res) => {
     );
 
     // TODO: Email the customer that their order succeeded?
+    await send(email, 'Checkout endpoint works???', 'Does it work?');
 
     res.status(200);
     res.json({ ...authResult, success: true });
