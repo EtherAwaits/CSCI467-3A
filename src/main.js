@@ -317,11 +317,13 @@ document.addEventListener("DOMContentLoaded", () => {
                     
                     <table class="table table-fixed w-full my-4">
                         <thead>
-                            <tr class="theader grid-cols-5">
+                            <tr class="theader grid-cols-7">
                                 <th class="">Order ID</th>
                                 <th class="">Customer</th>
                                 <th class="">Total</th>
                                 <th class="">Weight</th>
+                                <th class=""></th>
+                                <th class=""></th>
                                 <th class=""></th>
                             </tr>
                         </thead>
@@ -347,10 +349,10 @@ document.addEventListener("DOMContentLoaded", () => {
                                 <td class="">
                                     <button class="btn-form" id="complete-${orders.order_id}" num="${orders.order_id}">Complete</button>
                                 </td>
-                                <td class="p-2">
+                                <td>
                                     <button class="btn text-white bg-secondary hover:bg-accent hover:border-accent hover:border-single hover:border-2 hover:shadow-lg hover:shadow-accent/50 p-2" id="invoice-${orders.order_id}" num="${orders.order_id}">Print Invoice</button>
                                 </td>
-                                <td class="p-2">
+                                <td>
                                     <button class="btn text-white bg-secondary hover:bg-accent hover:border-accent hover:border-single hover:border-2 hover:shadow-lg hover:shadow-accent/50 p-2" id="packing-list-${orders.order_id}" num="${orders.order_id}">Print Packing List</button>
                                 </td>
                             </div>
@@ -417,14 +419,14 @@ document.addEventListener("DOMContentLoaded", () => {
                             })
                         })
 
-                        // Invoice Button
+                        // Packing List Button
                         const packingListButtons = document.querySelectorAll("[id^='packing-list-']");
                         packingListButtons.forEach(button => {
                             button.addEventListener("click", (event) => {
                                 const id = event.target.getAttribute("num");
 
                                 getAllOrders(id).then(order => {
-                                    let invoice = `
+                                    let packingList = `
                                         <h1 align='center'>Packing List</h1>
                                         <p align='center'>Ege Auto Parts</p>
                                         <p align='center'>For Order ID ${id}</p>
@@ -438,19 +440,19 @@ document.addEventListener("DOMContentLoaded", () => {
                                     `;
 
                                     order.items.forEach(part => {
-                                        invoice += `<tr><td align='right' width='300px'>${part.description}</td><td align='right' width='50px'>${part.amount_ordered}</td><td align='right' width='100px'>${part.weight} lbs</td><td align='right' width='100px'>${part.weight * part.amount_ordered} lbs</td></tr>`;
+                                        packingList += `<tr><td align='right' width='300px'>${part.description}</td><td align='right' width='50px'>${part.amount_ordered}</td><td align='right' width='100px'>${part.weight} lbs</td><td align='right' width='100px'>${part.weight * part.amount_ordered} lbs</td></tr>`;
                                     });
 
-                                    invoice += `<tr><td><br></td></tr>`
+                                    packingList += `<tr><td><br></td></tr>`
 
-                                    invoice += `<tr><td></td><td></td><td align='right' width='100px'>Total Weight:</td><td width='100px' align='right'>${order.total_weight} lbs</td></tr></table>`;
+                                    packingList += `<tr><td></td><td></td><td align='right' width='100px'>Total Weight:</td><td width='100px' align='right'>${order.total_weight} lbs</td></tr></table>`;
 
                                     const iframe = document.createElement('iframe');
                                     iframe.classList.add("hidden");
 
                                     iframe.onload = () => {
                                         const doc = iframe.contentDocument ? iframe.contentDocument : iframe.contentWindow.document;
-                                        doc.getElementsByTagName('body')[0].innerHTML = invoice;
+                                        doc.getElementsByTagName('body')[0].innerHTML = packingList;
 
                                         iframe.contentWindow.focus(); 
                                         iframe.contentWindow.print();
