@@ -46,6 +46,18 @@ module.exports = asyncHandler(async (req, res) => {
   let shippingPrice = 0;
   let basePrice = 0;
   let weight = 0;
+  let emailContent = `
+    <h1 align='center'>Order Succeeded!</h1>
+    <p align='center'>Thank you for shopping at Ege Auto Parts.</p>
+    <p align='center'>Your Order ID is ${transactionID}</p>
+    <table align='center'>
+      <tr>
+          <th align='right'>Product</th>
+          <th align='right'>Qty</th>
+          <th align='right'>Rate</th>
+          <th align='right'>Amount</th>
+      </tr>
+  `;
 
   for (const param of [name, email, address, cc, exp]) {
     if (!param || typeof param !== "string") {
@@ -84,7 +96,7 @@ module.exports = asyncHandler(async (req, res) => {
     try {
       const partInfo = await make_query(
         LEGACY_DB_INFO,
-        `SELECT price,weight FROM parts WHERE number = ${item.part_id}`
+        `SELECT price,weight,description FROM parts WHERE number = ${item.part_id}`
       );
 
       const currStockQuery = await make_query(
@@ -105,6 +117,14 @@ module.exports = asyncHandler(async (req, res) => {
 
       orderedItemsStr += `('${transactionID}','${item.part_id}',
                            '${item.amount_ordered}','${partInfo[0].price}'),`;
+
+      emailContent += `<tr>
+        <td align='right' width='300px'>${partInfo[0].description}</td>
+        <td align='right' width='50px'>${item.amount_ordered}</td>
+        <td align='right' width='100px'>$${partInfo[0].price.toFixed(2)}</td>
+        <td align='right' width='100px'>$${(partInfo[0].price * item.amount_ordered).toFixed(2)}</td>
+      </tr>`;
+
     } catch (error) {
       res.status(400);
       res.json({
@@ -138,6 +158,8 @@ module.exports = asyncHandler(async (req, res) => {
   const finalItemsStr =
     orderedItemsStr.slice(0, orderedItemsStr.length - 1) + ";";
 
+  const totalAmount = Math.round((basePrice + shippingPrice) * 100) / 100;
+
   try {
     const authResponse = await fetch("http://blitz.cs.niu.edu/CreditCard/", {
       method: "POST",
@@ -151,7 +173,7 @@ module.exports = asyncHandler(async (req, res) => {
         cc,
         name,
         exp,
-        amount: Math.round((basePrice + shippingPrice) * 100) / 100,
+        amount: totalAmount,
       }),
     });
 
@@ -187,8 +209,13 @@ module.exports = asyncHandler(async (req, res) => {
         ) VALUES ${finalItemsStr}`
     );
 
-    // TODO: Email the customer that their order succeeded?
-    await send(email, 'Checkout endpoint works???', 'Does it work?');
+    emailContent += `<tr><td><br></td></tr>`
+
+    emailContent += `<tr><td></td><td></td><td align='right' width='100px'>Subtotal:</td><td align='right'>$${basePrice.toFixed(2)}</td></tr>`;
+    emailContent += `<tr><td></td><td></td><td align='right' width='100px'>Shipping:</td><td width='100px' align='right'>$${shippingPrice.toFixed(2)}</td></tr>`;
+    emailContent += `<tr><td></td><td></td><td align='right' width='100px'>Total:</td><td width='100px' align='right'>$${totalAmount.toFixed(2)}</td></tr></table>`;
+
+    await send(email, emailContent, 'Order Succeeded');
 
     res.status(200);
     res.json({ ...authResult, success: true });
