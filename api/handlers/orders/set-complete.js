@@ -7,9 +7,14 @@ module.exports = asyncHandler(async (req, res) => {
   try {
     const { orderID } = req.params;
 
+    // Set to complete and reduce quantity
     await make_query(
       OUR_DB_URL,
-      `UPDATE orders SET is_complete = '1' WHERE order_id = '${orderID}'`
+      `UPDATE orders 
+       JOIN ordered_items ON orders.order_id = ordered_items.order_id
+       JOIN part_quantities ON ordered_items.part_id = part_quantities.part_id
+       SET part_quantities.quantity = part_quantities.quantity - ordered_items.amount_ordered,
+                        is_complete = '1' WHERE orders.order_id = '${orderID}'`
     );
 
     res.status(200);
