@@ -1,34 +1,35 @@
 const { OUR_DB_URL, LEGACY_DB_INFO, make_query } = require("../../db.js");
 const { asyncHandler } = require("../utils.js");
 const uuid = require("uuid");
-const nodemailer = require('nodemailer');
+const nodemailer = require("nodemailer");
 const dotenv = require("dotenv").config();
 
 const transporter = nodemailer.createTransport({
-  host: 'smtp.zoho.com',
-  port: '465',
+  host: "smtp.zoho.com",
+  port: "465",
   secure: true, // true for 465, false for other ports
   auth: {
     user: "autoparts467",
-    pass: dotenv.parsed.EMAIL_PASSWORD, 
+    pass: dotenv.parsed.EMAIL_PASSWORD,
   },
 });
 
 const send = (to, content, subject) => {
   return new Promise((resolve, reject) => {
-    if (!content) return reject(new Error('fail because mail content was empty'));
-      const options =  {
-        from: "autoparts467@zohomail.com",
-        to,
-        subject,
-        text: '', // plain text body
-        html: content, // html body
-      };
-      return transporter.sendMail(options, (error, info) => {
-        if (error) return reject(error);
-        return resolve(info);
-      });
+    if (!content)
+      return reject(new Error("fail because mail content was empty"));
+    const options = {
+      from: "autoparts467@zohomail.com",
+      to,
+      subject,
+      text: "", // plain text body
+      html: content, // html body
+    };
+    return transporter.sendMail(options, (error, info) => {
+      if (error) return reject(error);
+      return resolve(info);
     });
+  });
 };
 
 // POST /api/checkout
@@ -122,9 +123,10 @@ module.exports = asyncHandler(async (req, res) => {
         <td align='right' width='300px'>${partInfo[0].description}</td>
         <td align='right' width='50px'>${item.amount_ordered}</td>
         <td align='right' width='100px'>$${partInfo[0].price.toFixed(2)}</td>
-        <td align='right' width='100px'>$${(partInfo[0].price * item.amount_ordered).toFixed(2)}</td>
+        <td align='right' width='100px'>$${(
+          partInfo[0].price * item.amount_ordered
+        ).toFixed(2)}</td>
       </tr>`;
-
     } catch (error) {
       res.status(400);
       res.json({
@@ -209,13 +211,36 @@ module.exports = asyncHandler(async (req, res) => {
         ) VALUES ${finalItemsStr}`
     );
 
-    emailContent += `<tr><td><br></td></tr>`
+    emailContent += `
+      <tr>
+        <td><br></td>
+      </tr>
+      <tr>
+        <td></td><td></td><td align='right' width='100px'>Subtotal:</td><td align='right'>
+          $${basePrice.toFixed(2)}
+        </td>
+      </tr>
+      <tr>
+        <td></td>
+        <td></td>
+        <td align='right' width='100px'>Shipping:</td>
+        <td width='100px' align='right'>
+          $${shippingPrice.toFixed(2)}
+        </td>
+      </tr>
+      <tr>
+        <td></td>
+        <td></td>
+        <td align='right' width='100px'>Total:</td>
+        <td width='100px' align='right'>
+          $${totalAmount.toFixed(2)}
+        </td>
+      </tr>
+    </table>`;
 
-    emailContent += `<tr><td></td><td></td><td align='right' width='100px'>Subtotal:</td><td align='right'>$${basePrice.toFixed(2)}</td></tr>`;
-    emailContent += `<tr><td></td><td></td><td align='right' width='100px'>Shipping:</td><td width='100px' align='right'>$${shippingPrice.toFixed(2)}</td></tr>`;
-    emailContent += `<tr><td></td><td></td><td align='right' width='100px'>Total:</td><td width='100px' align='right'>$${totalAmount.toFixed(2)}</td></tr></table>`;
-
-    await send(email, emailContent, 'Order Succeeded');
+    if (dotenv.parsed.EMAIL_PASSWORD) {
+      await send(email, emailContent, "Order Succeeded");
+    }
 
     res.status(200);
     res.json({ ...authResult, success: true });
