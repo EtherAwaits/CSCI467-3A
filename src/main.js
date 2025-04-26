@@ -112,6 +112,7 @@ document.addEventListener("DOMContentLoaded", () => {
     const display = document.getElementById("display");
 
     updateDisplay("home"); //Begin at home tab
+    updateCartIndicator(); // Update cart count on load
 
     // Handle tab switching
     tabs.forEach((tab) => {
@@ -120,6 +121,44 @@ document.addEventListener("DOMContentLoaded", () => {
             updateDisplay(tabName);
         });
     });
+
+    // Toast Alerts 
+    function showToast(message, color = "bg-info") {
+        const toast = document.createElement("div");
+        toast.className = `toast toasty fixed bottom-1 right-1 p-3 text-white rounded-lg shadow-lg ${color}`;
+        toast.style.transition = "opacity 0.5s ease";
+        toast.textContent = message;
+
+        // Remove previous toast if needed.
+        if (document.querySelector(".toasty")) {
+            document.querySelector(".toasty").remove();
+        }
+        document.body.appendChild(toast);
+
+        // Fade out
+        setTimeout(() => {
+            toast.style.opacity = "0";
+            setTimeout(() => {
+                toast.remove();
+            }, 500);
+        }, 3000);
+    } 
+
+    function updateCartIndicator(){ // Update cart count indicator.
+        const cart = document.getElementById("cart-indicator");
+        const cartItems = JSON.parse(localStorage.getItem("cart") ?? "[]");
+        if (cartItems.length > 0) { // Display cart size.
+            const totalItems = cartItems.reduce((acc, item) => acc + item.quantity, 0);
+            cart.textContent = totalItems;
+            cart.classList.remove("hidden");
+        }
+        else { // Hide if cart is empty.
+            cart.textContent = 0;
+            cart.classList.add("hidden");
+        }
+
+    } 
+
 
     // Update the display based on the tab
     function updateDisplay(tabName) {
@@ -132,13 +171,13 @@ document.addEventListener("DOMContentLoaded", () => {
                     <div class="hero-content flex-col lg:flex-row">
                         <img
                         src="images/EGE_AUTO.png"
-                        class="max-w-sm rounded-lg shadow-2xl" />
+                        class="max-w-sm card shadow-2xl" />
                         <div>
                         <h1 class="text-5xl font-bold">Welcome to Ege Auto Parts!</h1>
                         <p class="py-6">
                             Quality parts for all your auto needs
                         </p>
-                        <button id="go-button" class="btn text-white bg-secondary hover:bg-accent hover:border-accent hover:border-single hover:border-2 hover:shadow-lg hover:shadow-accent/50 p-2">Shop Here</button>
+                        <button id="go-button" class="btn-form">Shop Here</button>
                         </div>
                     </div>
                     </div>
@@ -154,7 +193,7 @@ document.addEventListener("DOMContentLoaded", () => {
             case "products":
                 display.innerHTML = `
                     <h1 class="text-xl font-bold my-4">👨‍🔧Products</h1>
-
+                    
                     <label class="input input-lg">
                         <svg class="h-[1em] opacity-50" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24">
                             <g stroke-linejoin="round" stroke-linecap="round" stroke-width="2.5" fill="none" stroke="currentColor">
@@ -165,21 +204,23 @@ document.addEventListener("DOMContentLoaded", () => {
                         <input type="search" required placeholder="Search" id="product-search" />
                     </label>
 
-                    <table class="table-auto w-full my-4">
+                    <i id="product-count" class="text-sm"></i> 
+
+                    <table class="table table-fixed w-full my-2">
                         <thead>
-                            <tr class="bg-primary text-white grid grid-cols-6 rounded-2xl ">
-                                <th class="p-2">Product</th>
-                                <th class="p-2">Price</th>
-                                <th class="p-2">Weight</th>
-                                <th class="p-2">In Stock</th>
-                                <th class="p-2"></th>
-                                <th class="p-2"></th>
+                            <tr class="theader grid-cols-5">
+                                <th class="">Product</th>
+                                <th class="">Price</th>
+                                <th class="">Weight</th>
+                                <th class="">In Stock</th>
+                                <th class=""></th>
                             </tr>
                         </thead>
                         <tbody id="product-list">
                         </tbody>
                     </table>
                 `;
+
                 // CART AREA
                 refreshProduct(); 
 
@@ -187,16 +228,17 @@ document.addEventListener("DOMContentLoaded", () => {
                 function refreshProduct(query = "") {
                     getParts(query).then((products) => {
                         const productList = document.getElementById("product-list");
+                        const productCount = document.getElementById("product-count");
                         productList.innerHTML = products.map(product => `
-                            <tr class="bg-base-300 hover:outline-3 hover:outline-accent rounded-2xl grid grid-cols-5 gap-2 my-2 hover:shadow-lg hover:shadow-accent/50">
+                            <tr class="tcontent">
                             <div>
-                                <td class="p-2 flex"><img src="${product.pictureURL}" alt="${product.description}" class="size-10 rounded-lg" /><b class="mx-4">${product.description}</b></td>
-                                <td class="p-2">$${product.price.toFixed(2)}</td>
-                                <td class="p-2">${product.weight.toFixed(2)} lbs</td>
-                                <td class="p-2">${product.quantity}</td>
-                                <td class="p-2">
-                                    <input type="number" min="1" max="${product.quantity}" value="1" class="input input-bordered w-16" id="quantity-${product.number}" />
-                                    <button class="btn text-white bg-secondary hover:bg-accent hover:border-accent hover:border-single hover:border-2 hover:shadow-lg hover:shadow-accent/50 p-2" id="add-to-cart-${product.number}">Add to Cart</button>
+                                <td class=" flex"><img src="${product.pictureURL}" alt="${product.description}" class="size-10 card" /><b class="mx-4">${product.description}</b></td>
+                                <td class="">$${product.price.toFixed(2)}</td>
+                                <td class="">${product.weight.toFixed(2)} lbs</td>
+                                <td class="">${product.quantity}</td>
+                                <td class="">
+                                    <input type="number" min="1" max="${product.quantity}" value="1" class="input input-bordered w-12" id="quantity-${product.number}" />
+                                    <button class="btn-form" id="add-to-cart-${product.number}">Add Cart</button>
                                 </td>
                             </div>
                             </tr>
@@ -217,6 +259,11 @@ document.addEventListener("DOMContentLoaded", () => {
 
                                 // Get the product info
                                 const product = products.find(product => product.number == index);
+
+                                if (product.quantity < ordQuantity) {
+                                    showToast(`Not enough stock available.`, "bg-error");
+                                    return;
+                                }
 
                                 // localStorage.setItem("item", product.description);
                                 // localStorage.setItem("quantity", ordQuantity);
@@ -245,13 +292,14 @@ document.addEventListener("DOMContentLoaded", () => {
                                 //orderComplete(event.target.getAttribute("num"));
                                 
                                 //write calls to local storage here.
-                                
+                                updateCartIndicator();
+                                showToast(`(${ordQuantity}) ${product.description} added to cart.`, "bg-info");
                             });
                         });
+
+                        // Update the product count
+                        productCount.textContent = `Found ${products.length} product(s)`;
                     });
-
-
-
                 }
 
                 // Function for the search bar
@@ -264,16 +312,17 @@ document.addEventListener("DOMContentLoaded", () => {
             case "orders":
                 display.innerHTML = `
                     <h1 class="text-xl font-bold my-4">📋Open Orders</h1>
+
+                    <i id="order-count" class="text-sm"></i> 
                     
-                    <table class="table-auto w-full my-4">
+                    <table class="table table-fixed w-full my-4">
                         <thead>
-                            <tr class="bg-primary text-white grid grid-cols-6 rounded-2xl ">
-                                <th class="p-2">Order ID</th>
-                                <th class="p-2">Customer</th>
-                                <th class="p-2">Total</th>
-                                <th class="p-2">Weight</th>
-                                <th class="p-2"></th>
-                                <th class="p-2"></th>
+                            <tr class="theader grid-cols-5">
+                                <th class="">Order ID</th>
+                                <th class="">Customer</th>
+                                <th class="">Total</th>
+                                <th class="">Weight</th>
+                                <th class=""></th>
                             </tr>
                         </thead>
                         <tbody id="product-list">
@@ -287,15 +336,16 @@ document.addEventListener("DOMContentLoaded", () => {
                 function refreshOrder(query = "") {
                     getOrders().then((orders) => {
                         const productList = document.getElementById("product-list");
+                        const orderCount = document.getElementById("order-count");
                         productList.innerHTML = orders.map(orders => `
-                            <tr class="bg-base-300 hover:outline-3 hover:outline-accent rounded-2xl grid grid-cols-5 gap-2 my-2 hover:shadow-lg hover:shadow-accent/50">
+                            <tr class="tcontent">
                             <div>
-                                <td class="p-2">${orders.order_id}</b></td>
-                                <td class="p-2"><b>${orders.customer_name}</b></td>
-                                <td class="p-2">$${(orders.base_price + orders.shipping_price).toFixed(2)}</td>
-                                <td class="p-2">${orders.total_weight.toFixed(2)} lbs</td>
-                                <td class="p-2">
-                                    <button class="btn text-white bg-secondary hover:bg-accent hover:border-accent hover:border-single hover:border-2 hover:shadow-lg hover:shadow-accent/50 p-2" id="complete-${orders.order_id}" num="${orders.order_id}">Complete Order</button>
+                                <td class="">${orders.order_id}</b></td>
+                                <td class=""><b>${orders.customer_name}</b></td>
+                                <td class="">$${(orders.base_price + orders.shipping_price).toFixed(2)}</td>
+                                <td class="">${orders.total_weight.toFixed(2)} lbs</td>
+                                <td class="">
+                                    <button class="btn-form" id="complete-${orders.order_id}" num="${orders.order_id}">Complete</button>
                                 </td>
                             </div>
                             </tr>
@@ -306,10 +356,14 @@ document.addEventListener("DOMContentLoaded", () => {
                         completeButtons.forEach((button) => {
                             button.addEventListener("click", (event) => {
                                 console.log("clicked");
+                                showToast(`Order Completed.`, "bg-success");
                                 orderComplete(event.target.getAttribute("num"));
                                 setTimeout(() => { refreshOrder(); }, 250); // Slight delay to give time for db to update
                             });
                         });
+
+                        // Update the product count
+                        orderCount.textContent = `Found ${orders.length} order(s)`;
                     });
                 }
             
@@ -328,16 +382,17 @@ document.addEventListener("DOMContentLoaded", () => {
                         <input type="search" required placeholder="Search" id="product-search" />
                     </label>
 
-                    <table class="table-auto w-full my-4">
+                    <i id="product-count" class="text-sm my-2"></i>
+
+                    <table class="table table-fixed w-full">
                         <thead>
-                            <tr class="bg-primary text-white grid grid-cols-7 rounded-2xl ">
-                                <th class="p-2">Product</th>
-                                <th class="p-2">ID</th>
-                                <th class="p-2">Price</th>
-                                <th class="p-2">Weight</th>
-                                <th class="p-2">In Stock</th>
-                                <th class="p-2"></th>
-                                <th class="p-2"></th>
+                            <tr class="theader grid-cols-6">
+                                <th class="">Product</th>
+                                <th class="">ID</th>
+                                <th class="">Price</th>
+                                <th class="">Weight</th>
+                                <th class="">In Stock</th>
+                                <th class=""></th>
                             </tr>
                         </thead>
                         <tbody id="product-list">
@@ -351,17 +406,18 @@ document.addEventListener("DOMContentLoaded", () => {
                 function refreshProducts(query = "") {
                     getParts(query).then((products) => {
                         const productList = document.getElementById("product-list");
+                        const prodCount = document.getElementById("product-count");
                         productList.innerHTML = products.map(product => `
-                            <tr class="bg-base-300 hover:outline-3 hover:outline-accent rounded-2xl grid grid-cols-6 gap-2 my-2 hover:shadow-lg hover:shadow-accent/50">
+                            <tr class="tcontent">
                             <div>
-                                <td class="p-2 flex"><img src="${product.pictureURL}" alt="${product.description}" class="size-10 rounded-lg" /><b class="mx-4">${product.description}</b></td>
-                                <td class="p-2">${product.number}</td>
-                                <td class="p-2">$${product.price.toFixed(2)}</td>
-                                <td class="p-2">${product.weight.toFixed(2)} lbs</td>
-                                <td class="p-2">${product.quantity}</td>
-                                <td class="p-2">
-                                    <input type="number" min="1" max="${product.quantity}" value="1" class="input input-bordered w-16" id="quantity-${product.number}" />
-                                    <button class="btn text-white bg-secondary hover:bg-accent hover:border-accent hover:border-single hover:border-2 hover:shadow-lg hover:shadow-accent/50 p-2" id="add-to-cart-${product.number}" q="${product.quantity}" num="${product.number}">Add Inventory</button>
+                                <td class=" flex"><img src="${product.pictureURL}" alt="${product.description}" class="size-10 rounded-lg" /><b class="mx-4">${product.description}</b></td>
+                                <td class="">#${product.number}</td>
+                                <td class="">$${product.price.toFixed(2)}</td>
+                                <td class="">${product.weight.toFixed(2)} lbs</td>
+                                <td class="">${product.quantity}</td>
+                                <td class="">
+                                    <input type="number" min="1" max="9999" value="1" class="input input-bordered w-16" id="quantity-${product.number}" />
+                                    <button class="btn-form" id="add-to-cart-${product.number}" q="${product.quantity}" desc="${product.description}" num="${product.number}">Add Stock</button>
                                 </td>
                             </div>
                             </tr>
@@ -373,13 +429,18 @@ document.addEventListener("DOMContentLoaded", () => {
                             button.addEventListener("click", (event) => {
                                 console.log("clicked");
                                 const order = event.target.getAttribute("num");           
+                                const desc = event.target.getAttribute("desc");    
                                 const input = document.getElementById(`quantity-${order}`).value;
                                 const q = event.target.getAttribute("q"); 
                                 const num = Number(input) + Number(q);
+                                showToast(`(${input}) ${desc} added to stock.`, "bg-success");
                                 addParts(order,num);
                                 setTimeout(() => { refreshProducts(); }, 250); // Slight delay to give time for db to update
                             });
                         });
+
+                        // Update the product count
+                        prodCount.textContent = `Found ${products.length} product(s)`;
                         
                     });
                 }
@@ -395,39 +456,46 @@ document.addEventListener("DOMContentLoaded", () => {
                 display.innerHTML = `
                     <h1 class="text-xl font-bold my-4">🔒Admin Panel</h1>
 
-                    <h1 class="text-xl font-bold">Weight Brackets</h1>
-                    
-                    <table class="table-auto my-4 w-132">
+                    <div class="divider divider-primary"><h1 class="text-xl font-bold">Weight Brackets</h1></div>
+                    <div class="w-full flex justify-center">
+                    <table class="table table-fixed my-2 w-132">
                         <thead>
-                            <tr class="bg-primary text-white grid grid-cols-4 rounded-2xl ">
-                                <th class="p-2">Weight Range</th>
-                                <th class="p-2">Cost</th>
-                                <th class="p-2"></th>
-                                <th class="p-2"></th>
+                            <tr class="theader grid-cols-3">
+                                <th class="">Weight Range</th>
+                                <th class="">Cost</th>
+                                <th class=""></th>
                             </tr>
                         </thead>
                         <tbody id="weight-list">
                         </tbody>
                     </table>
-                    
-                    <i class="text-l">Add Bracket</i>
-                    <div class="card grid grid-cols-3 p-4 gap-2 w-1/2">
+                    </div>
+
+                    <div class="w-full flex justify-center">
+                    <fieldset class="fieldset bg-base-200 border-base-300 rounded-box w-xs border my-2 p-6">
+                    <legend class="fieldset-legend">Add Weight Bracket</legend>
+                    <div class="card grid grid-cols-3 gap-2 w-120">
 
                         <label for="weight" class="input">                           
-                        <span class="label">Weight</span>
-                        <input type="number" id="weight" name ="weight" class=""/></label>
+                        <span class="label">Min lbs</span>
+                        <input type="number" id="weight" name ="weight" class="" min="0"/></label>
 
                         <label for="cost" class="input">                           
                         <span class="label">Cost</span>
-                        <input type="number" id="cost" name ="cost" class=""/></label>
+                        <input type="number" id="cost" name ="cost" class="" min="0"/></label>
 
-                        <button class="btn text-white bg-secondary hover:bg-accent hover:border-accent hover:border-single hover:border-2 hover:shadow-lg hover:shadow-accent/50 p-2" id="create-button">Create</button>
+                        <button class="btn-form" id="create-button">Create</button>
+                    </div>
+                    </fieldset>
                     </div>
 
-                    <h1 class="text-xl font-bold">All Orders</h1>
-                    <i class="text-m">Filters</i>
+                    <div class="divider divider-primary"><h1 class="text-xl font-bold">All Orders</h1></div>
+                    
+                    <div class="w-full flex justify-center">
 
-                    <div class="card grid grid-cols-2 p-4 gap-2 w-132">
+                    <fieldset class="fieldset bg-base-200 border-base-300 rounded-box w-xs border p-4">
+                    <legend class="fieldset-legend">Filters</legend>
+                    <div class="card grid grid-cols-2 gap-2 w-120">
                     
                         <label class="input">
                         <span class="label">Min Date</span>
@@ -447,26 +515,30 @@ document.addEventListener("DOMContentLoaded", () => {
                         <span class="label">Max Prize</span>
                         <input type="text" id="max-prize" name ="max-prize" class=""/></label>
 
-                        <label class="select">
+                        <label class="select selected">
                         <span class="label">Status</span>
-                        <select class="select">
+                        <select class="select" id="status-select">
                         <option selected></option>
                         <option>Authorized</option>
-                        <option>Shipped</option>
+                        <option>Complete</option>
                         </select>
                         </label>
 
-                        <button class="btn text-white bg-secondary hover:bg-accent hover:border-accent hover:border-single hover:border-2 hover:shadow-lg hover:shadow-accent/50 p-2" id="filter-button">Filter</button>
+                        <button class="btn-form" id="filter-button">Filter</button>
+                    </div>
+                    </fieldset>
                     </div>
 
-                    <table class="table-auto w-full my-4">
+                    <i id="order-count" class="text-sm my-2"></i> 
+
+                    <table class="table table-fixed w-full">
                         <thead>
-                            <tr class="bg-primary text-white grid grid-cols-5 rounded-2xl" id="status">
-                                <th class="p-2">Order ID</th>
-                                <th class="p-2">Status</th>
-                                <th class="p-2">Total</th>
-                                <th class="p-2">Date Ordered</th>
-                                <th class="p-2"></th>
+                            <tr class="theader grid-cols-5" id="status">
+                                <th class="">Order ID</th>
+                                <th class="">Status</th>
+                                <th class="">Total</th>
+                                <th class="">Date Ordered</th>
+                                <th class=""></th>
                             </tr>
                         </thead>
                         <tbody id="product-list">
@@ -488,24 +560,26 @@ document.addEventListener("DOMContentLoaded", () => {
                         weightList.innerHTML = weights.map((weight, index) => {
                             const nextMinWeight = weights[index + 1]?.minimum_weight - 1 || "∞"; // Use the next bracket's minimum or infinity
                             return `
-                                <tr class="bg-base-300 hover:outline-3 hover:outline-accent rounded-2xl grid grid-cols-3 gap-2 my-2 hover:shadow-lg hover:shadow-accent/50">
+                                <tr class="tcontent">
                                 <div>
-                                    <td class="p-2">${weight.minimum_weight} lbs to ${nextMinWeight} lbs</b></td>
-                                    <td class="p-2"><b>$${weight.shipping_price.toFixed(2)}</b></td>
-                                    <td class="p-2">
-                                        <button class="btn text-white bg-secondary hover:bg-accent hover:border-accent hover:border-single hover:border-2 hover:shadow-lg hover:shadow-accent/50 p-2" id="delete-${weight.weight_bracket_id}" num="${weight.weight_bracket_id}">Delete</button>
+                                    <td class="">${weight.minimum_weight} lbs to ${nextMinWeight} lbs</b></td>
+                                    <td class=""><b>$${weight.shipping_price.toFixed(2)}</b></td>
+                                    <td class="">
+                                        <button class="btn-form" id="delete-${weight.weight_bracket_id}" num="${weight.weight_bracket_id}">Delete</button>
                                     </td>
                                 </div>
                                 </tr>
                             `;
                         }).join("");
 
+                        // Add delete events.
                         const deleteButtons = document.querySelectorAll("[id^='delete-']");
                         deleteButtons.forEach((button) => {
                             button.addEventListener("click", (event) => {
                                 console.log("clicked");
                                 const order = event.target.getAttribute("num");           
                                 deleteWeight(order);
+                                showToast(`Removed weight bracket.`, "bg-success");
                                 setTimeout(() => { refreshWeights(); }, 250); // Slight delay to give time for db to update
                             });
                         });
@@ -518,6 +592,7 @@ document.addEventListener("DOMContentLoaded", () => {
                 createButton.addEventListener("click", () => {
                     const weight = document.getElementById("weight").value;
                     const cost = document.getElementById("cost").value;
+                    showToast(`Added weight bracket.`, "bg-success");
                     addWeight(weight,cost);
                     setTimeout(() => { refreshWeights(); }, 250); // Slight delay to give time for db to update
                 });
@@ -527,7 +602,7 @@ document.addEventListener("DOMContentLoaded", () => {
                 const maxDate = document.querySelector("#max-date");
                 const minPrize = document.querySelector("#min-prize");
                 const maxPrize = document.querySelector("#max-prize");
-                const status = document.querySelector("#status");
+                const status = document.getElementById("status-select");
                 const filterButton = document.getElementById("filter-button");
                 filterButton.addEventListener("click", () => {
                     const minDateValue = minDate.value;
@@ -551,25 +626,25 @@ document.addEventListener("DOMContentLoaded", () => {
                 function refreshOrders(query = "") {
                     getAllOrders(query).then((orders) => {
                         const productList = document.getElementById("product-list");
+                        const orderCount = document.getElementById("order-count");
                         productList.innerHTML = orders.map(orders => `
-                            <tr class="bg-base-300 hover:outline-3 hover:outline-accent rounded-2xl grid grid-cols-5 gap-2 my-2 hover:shadow-lg hover:shadow-accent/50">
+                            <tr class="tcontent">
                             <div>
-                                <td class="p-2">${orders.order_id}</b></td>
-                                <td class="p-2"><b>${orders.is_complete === 1 ? "Completed" : "Authorized"}</b></td>
-                                <td class="p-2">$${(orders.base_price + orders.shipping_price).toFixed(2)}</td>
-                                <td class="p-2">${orders.date_placed}</td>
-                                <td class="p-2">
-                                    <button class="btn bg-secondary text-white hover:bg-accent hover:border-accent hover:border-single hover:border-2 hover:shadow-lg hover:shadow-accent/50 p-2" id="view-${orders.order_id}" num="${orders.order_id}">View Order</button>
+                                <td class="">${orders.order_id}</b></td>
+                                <td class=""><b>${orders.is_complete === 1 ? "Completed" : "Authorized"}</b></td>
+                                <td class="">$${(orders.base_price + orders.shipping_price).toFixed(2)}</td>
+                                <td class="">${orders.date_placed}</td>
+                                <td class="">
+                                    <button class="btn-form" id="view-${orders.order_id}" num="${orders.order_id}">View</button>
                                 </td>
                             </div>
                             </tr>
                         `).join("");
 
-                    // View Order
+                    // View Full Order
                     const viewOrder = document.querySelectorAll("[id^='view-']");
                     viewOrder.forEach((button) => {
                         button.addEventListener("click", (event) => {
-                            
                             const order = event.target.getAttribute("num");    
                             console.log(order);
                             Selectorder = getAllOrders(order).then((orders) => {
@@ -586,15 +661,15 @@ document.addEventListener("DOMContentLoaded", () => {
                                         <p><strong>E-mail:</strong> ${orders.email}</p>
                                         <p><strong>Authorization:</strong> ${orders.authorization_number}</p>
                                         ${orders.items.map(item => `
-                                            <div class="bg-base-300 hover:outline-3 hover:outline-accent rounded-2xl grid grid-cols-4 gap-2 my-2 hover:shadow-lg hover:shadow-accent/50">
+                                            <div class="bg-base-300 hover:outline-3 hover:outline-accent card grid grid-cols-4 gap-2 p-2 my-2 hover:shadow-lg hover:shadow-accent/50">
                                             <p class="mx-4"><strong>Part ID:</strong> ${item.part_id}</p>
                                             <p><strong>Description:</strong> ${item.description}</p>
-                                            <p><strong>Amount Ordered:</strong> ${item.amount_ordered}</p>
+                                            <p><strong>Quanitity:</strong> ${item.amount_ordered}</p>
                                             <p><strong>Weight:</strong> ${item.weight}</p>
                                             </div>
                                         `).join("")}
                                        
-                                        <button class="btn text-white bg-secondary hover:bg-accent hover:border-accent hover:border-single hover:border-2 hover:shadow-lg hover:shadow-accent/50 p-2 mt-4" id="back-button">Back</button>
+                                        <button class="btn-form" id="back-button">Back</button>
                                     `;
 
                                     const backButton = document.getElementById("back-button");
@@ -606,94 +681,117 @@ document.addEventListener("DOMContentLoaded", () => {
                                 }
                             });
                         });
-                            });
+                            // Update the product count
+                            orderCount.textContent = `Found ${orders.length} order(s)`;
                         });
-                  
+                    });
                 }
 
             break;
             case "cart":
                 display.innerHTML = `
                     <h1 class="text-xl font-bold my-4">🛒Cart</h1>
-                    
-                    <table class="table-auto w-1/2 my-4">
+
+                    <div class="w-full flex justify-center">
+                    <table class="table table-fixed w-132 my-2" id="cart-labels">
                         <thead>
-                            <tr class="bg-primary text-white grid grid-cols-6 rounded-2xl ">
-                                <th class="p-2">Product</th>
-                                <th class="p-2">Price</th>
-                                <th class="p-2">Weight</th>
-                                <th class="p-2">Quantity</th>
-                                <th class="p-2"></th>
-                                <th class="p-2"></th>
+                            <tr class="theader grid-cols-5">
+                                <th class="">Product</th>
+                                <th class="">Price</th>
+                                <th class="">Weight</th>
+                                <th class="">Quantity</th>
+                                <th class=""></th>
                             </tr>
                         </thead>
                         <tbody id="product-list"></tbody>
                     </table>
+                    </div>
+                    <div class="divider divider-primary"><h1 class="text-xl font-bold">Checkout</h1></div>
 
-                    <h1 class="text-xl font-bold">Checkout</h1>
+                    <i id="product-count" class="text-sm"></i>
 
+                <div class="w-full flex justify-center">
                     <form id="checkout" class="">
-                        <div class="card grid grid-cols-1 p-4 gap-2 w-1/2">
-
+                        <div class="card grid grid-cols-1 gap-2">
+                        <fieldset class="fieldset bg-base-200 border-base-300 rounded-box w-xs border p-4">
+                        <legend class="fieldset-legend">Customer Information</legend>
                             <label for="name" class="input">
                             <span class="label">Name</span>
                             <input type="text" id="name" name="name" class="" required oninvalid="this.setCustomValidity('Please enter your name')" oninput="this.setCustomValidity('')"/></label> 
 
                             <label for="credit-card" class="input">                           
                             <span class="label">Credit Card #</span>
-                            <input type="text" id="credit-card" name ="credit-card" class=""/></label>
+                            <input type="text" id="credit-card" name ="credit-card" class="" required/></label>
 
                             <label for="expiration-date" class="input">
                             <span class="label">Expiration Date</span>
                             <input type="text" id="expiration-date" name="expiration-date" class="" required/></label>
                             
                             <label for="email" class="input">
-                             <span class="label">E-mail</span>
-                            <input type="text" id="email" name="email" class=""/></label> 
+                            <span class="label">E-mail</span>
+                            <input type="text" type="email" id="email" name="email" class="validator" required/></label> 
                             
                             <label for="address" class="input">
                              <span class="label">Address</span>
-                            <input type="text" id="address" name="address" class=""/></label> 
+                            <input type="text" id="address" name="address" class="" required/></label> 
                             
-                            <button type="submit" class="btn text-white bg-secondary hover:bg-accent hover:border-accent hover:border-single hover:border-2 hover:shadow-lg hover:shadow-accent/50 p-2 w-1/3">Submit</button>
+                            <button type="submit" class="btn-form w-1/3">Submit</button>
+                        </fieldset>
                         </div>
                     </form>
+                <div>
                 `;
 
+                // Display the full cart.
                 function refreshCart() {
                     getParts().then((products) => {
                         const productList = document.getElementById("product-list");
+                        const prodCount = document.getElementById("product-count");
                         productList.innerHTML = JSON.parse(localStorage.getItem("cart") ?? "[]").map(cartItem => {
-
                             const part = products.find(product => product.number === cartItem.id);
-                            if (!part) return `<tr class="bg-base-300 hover:outline-3 hover:outline-accent rounded-2xl grid grid-cols-5 gap-2 my-2 hover:shadow-lg hover:shadow-accent/50"><div><td class="p-2">Error: Cart item not in parts query</td></div></tr>`;
-
-                            return `<tr class="bg-base-300 hover:outline-3 hover:outline-accent rounded-2xl grid grid-cols-5 gap-2 my-2 hover:shadow-lg hover:shadow-accent/50">
+                            if (!part) return `<tr class="tcontent"><div><td class="">Error: Cart item not in parts query</td></div></tr>`;
+                            return `<tr class="tcontent">
                                         <div>
-                                            <td class="p-2">${part.description}</td>
-                                            <td class="p-2">$${part.price.toFixed(2)}</td>
-                                            <td class="p-2">${part.weight.toFixed(2)} lbs</td>
-                                            <td class="p-2">${cartItem.quantity}</td>
-                                            <td class="p-2">
-                                                <button class="btn text-white bg-secondary hover:bg-accent hover:border-accent hover:border-single hover:border-2 hover:shadow-lg hover:shadow-accent/50 p-2" id="remove-from-cart-${cartItem.id}">Remove</button>
+                                            <td class=""><b>${part.description}</b></td>
+                                            <td class="">$${part.price.toFixed(2)}</td>
+                                            <td class="">${part.weight.toFixed(2)} lbs</td>
+                                            <td class="">${cartItem.quantity}</td>
+                                            <td class="">
+                                                <button class="btn-form -mx-4" id="remove-from-cart-${cartItem.id}" desc="${cartItem.name}">Remove</button>
                                             </td>
                                         </div>
                                     </tr>
                         `}).join("");
-                        
+                        if (productList.innerHTML === ""){
+                            const cartLabel = document.getElementById("cart-labels");
+                            cartLabel.innerHTML = `
+                            <i>Your cart is empty.</i><br>
+                            <button id="go-button" class="btn-form">Shop Here</button>
+                            `;
+
+                            // Button to product page.
+                            const goButton = document.getElementById("go-button");
+                            goButton.addEventListener("click", () => {
+                                updateDisplay("products");
+                            });
+                        }
+
+                        // Remove from cart event.
                         document.querySelectorAll("[id^='remove-from-cart-']").forEach(btn => btn.addEventListener("click", 
                             (e) => {
                                 const id = e.target.id.split("remove-from-cart-")[1];
-
+                                const desc = e.target.getAttribute("desc"); 
                                 const prevCart = JSON.parse(localStorage.getItem("cart") ?? "[]");
                                 const newCart = prevCart.filter(cartItem => cartItem.id !== Number(id));
-                                
+                                showToast(`${desc} removed to cart.`, "bg-info");
                                 localStorage.setItem("cart", JSON.stringify(newCart));
                                 
                                 refreshCart();
                             }
                         ));
                     })
+
+                    updateCartIndicator();
                 }
 
                 // This is some starter code for processing a checkout.
@@ -715,7 +813,11 @@ document.addEventListener("DOMContentLoaded", () => {
                     const address = document.querySelector("#address").value;
 
                     const cart = JSON.parse(localStorage.getItem("cart") ?? "[]");
-                    if (!Array.isArray(cart) || cart.length < 1) return;
+                    if (!Array.isArray(cart) || cart.length < 1)
+                    {
+                        showToast(`Your cart is empty. Please add items to your cart before checking out.`, "bg-error");
+                        return;
+                    } 
 
                     // Now we actually make the call to our backend using
                     // the data that was typed into the form.
@@ -737,13 +839,18 @@ document.addEventListener("DOMContentLoaded", () => {
                             }))
                         }),
                     });
+                    if (result.status === 200) {
+                        showToast(`Order has been placed. Thank you for shopping!`, "bg-success");
+                    }
+                    else {
+                        showToast(`Error placing order: ${result.statusText}. Please ensure all information is correct.`, "bg-error");
+                        return;
+                    }
 
                     // This just checks that our endpoint did something
                     const content = await result.json();
-
                     localStorage.removeItem("cart");
                     refreshCart();
-
 
                     console.log(content);
                 }
@@ -777,5 +884,4 @@ document.addEventListener("DOMContentLoaded", () => {
             `;
         }
     }
-
 });

@@ -7,5 +7,38 @@
 @tailwind utilities;
 
 .btn-form {
-  @apply text-white bg-secondary hover:bg-accent hover:border-accent hover:border-2 hover:shadow-lg hover:shadow-accent/50 p-2;
+  @apply btn text-white bg-secondary hover:bg-accent hover:border-accent hover:border-2 hover:shadow-md hover:shadow-accent/50;
+}
+
+.toasty {
+	animation: fade .2s 1;
+}
+
+.input {
+  @apply hover:outline-accent hover:outline-2 hover:shadow-md hover:shadow-accent/50;
+}
+
+.selected {
+  @apply hover:outline-accent hover:outline-2 hover:shadow-md hover:shadow-accent/50;
+}
+
+.tcontent{
+  @apply bg-base-200 hover:outline-2 hover:outline-accent card table table-fixed my-3 hover:shadow-md hover:shadow-accent/50;
+}
+
+.theader{
+	@apply bg-primary text-white grid card shadow-md shadow-primary/50;
+}
+
+@keyframes fade {
+	0% {
+		transform: scaleY(0);
+		transform-origin: 0% 100%;
+		opacity: 1;
+	}
+	100% {
+		transform: scaleY(1);
+		transform-origin: 0% 100%;
+		opacity: 1;
+	}
 }
