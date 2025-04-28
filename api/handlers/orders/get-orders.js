@@ -42,10 +42,10 @@ module.exports = asyncHandler(async (req, res) => {
       }
 
       if (i < 2) {
-        query += ` date_placed ${i > 0 ? "<" : ">"} '${param}'`;
+        query += ` date_placed ${i > 0 ? "<=" : ">="} CONVERT_TZ('${param} ${i > 0 ? "23:59:59" : "00:00:00"}', '-05:00', '-10:00')`;
       } else {
         query += ` (base_price + shipping_price) ${
-          i > 2 ? "<" : ">"
+          i > 2 ? "<=" : ">="
         } '${param}'`;
       }
     }
