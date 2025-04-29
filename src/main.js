@@ -317,13 +317,11 @@ document.addEventListener("DOMContentLoaded", () => {
                     
                     <table class="table table-fixed w-full my-4">
                         <thead>
-                            <tr class="theader grid-cols-7">
+                            <tr class="theader grid-cols-5">
                                 <th class="">Order ID</th>
                                 <th class="">Customer</th>
                                 <th class="">Total</th>
                                 <th class="">Weight</th>
-                                <th class=""></th>
-                                <th class=""></th>
                                 <th class=""></th>
                             </tr>
                         </thead>
@@ -346,14 +344,13 @@ document.addEventListener("DOMContentLoaded", () => {
                                 <td class=""><b>${orders.customer_name}</b></td>
                                 <td class="">$${(orders.base_price + orders.shipping_price).toFixed(2)}</td>
                                 <td class="">${orders.total_weight.toFixed(2)} lbs</td>
+                                <div>
                                 <td class="">
                                     <button class="btn-form" id="complete-${orders.order_id}" num="${orders.order_id}">Complete</button>
-                                </td>
-                                <td>
-                                    <button class="btn text-white bg-secondary hover:bg-accent hover:border-accent hover:border-single hover:border-2 hover:shadow-lg hover:shadow-accent/50 p-2" id="invoice-${orders.order_id}" num="${orders.order_id}">Print Invoice</button>
-                                </td>
-                                <td>
-                                    <button class="btn text-white bg-secondary hover:bg-accent hover:border-accent hover:border-single hover:border-2 hover:shadow-lg hover:shadow-accent/50 p-2" id="packing-list-${orders.order_id}" num="${orders.order_id}">Print Packing List</button>
+
+                                    <button class="btn text-white bg-secondary hover:bg-accent hover:border-accent hover:border-single hover:border-2 hover:shadow-lg hover:shadow-accent/50 p-2" id="invoice-${orders.order_id}" num="${orders.order_id}">Invoice</button>
+
+                                    <button class="btn text-white bg-secondary hover:bg-accent hover:border-accent hover:border-single hover:border-2 hover:shadow-lg hover:shadow-accent/50 p-2" id="packing-list-${orders.order_id}" num="${orders.order_id}">Packing List</button>
                                 </td>
                             </div>
                             </tr>
@@ -761,12 +758,22 @@ document.addEventListener("DOMContentLoaded", () => {
                                         <p><strong>Shipping Address:</strong> ${orders.mailing_address}</p>
                                         <p><strong>E-mail:</strong> ${orders.email}</p>
                                         <p><strong>Authorization:</strong> ${orders.authorization_number}</p>
+                                        <table class="table table-fixed w-full">
+                                        <thead>
+                                            <tr class="theader grid-cols-4">
+                                                <th class="">Part ID</th>
+                                                <th class="">Description</th>
+                                                <th class="">Quantity</th>
+                                                <th class="">Weight</th>
+                                            </tr>
+                                        </thead>
+                                        </table>
                                         ${orders.items.map(item => `
-                                            <div class="bg-base-300 hover:outline-3 hover:outline-accent card grid grid-cols-4 gap-2 p-2 my-2 hover:shadow-lg hover:shadow-accent/50">
-                                            <p class="mx-4"><strong>Part ID:</strong> ${item.part_id}</p>
-                                            <p><strong>Description:</strong> ${item.description}</p>
-                                            <p><strong>Quanitity:</strong> ${item.amount_ordered}</p>
-                                            <p><strong>Weight:</strong> ${item.weight}</p>
+                                            <div class="bg-base-200 hover:outline-2 hover:outline-accent card grid grid-cols-4 p-2 my-3 hover:shadow-md hover:shadow-accent/50">
+                                            <p class="mx-3">${item.part_id}</p>
+                                            <p class="mx-3">${item.description}</p>
+                                            <p class="mx-6">${item.amount_ordered}</p>
+                                            <p class="mx-6">${item.weight} Ibs</p>
                                             </div>
                                         `).join("")}
                                        
