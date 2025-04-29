@@ -5,6 +5,10 @@ const nodemailer = require("nodemailer");
 const dotenv = require("dotenv").config();
 const SqlString = require("sqlstring");
 
+// Configures emails using our credentials.
+// I found a free SMTP service called Zoho,
+// and that's what we're using to send emails
+// in this project.
 const transporter = nodemailer.createTransport({
   host: "smtp.zoho.com",
   port: "465",
@@ -15,6 +19,8 @@ const transporter = nodemailer.createTransport({
   },
 });
 
+// This is just a simple utility function to make
+// it easier to send emails. We only call it once, though.
 const send = (to, content, subject) => {
   return new Promise((resolve, reject) => {
     if (!content)
@@ -61,6 +67,8 @@ module.exports = asyncHandler(async (req, res) => {
       </tr>
   `;
 
+  // Simple validation of what the customer submitted - 
+  // make sure that all of the parameters exist
   for (const param of [name, email, address, cc, exp]) {
     if (!param || typeof param !== "string") {
       res.status(400);
@@ -72,6 +80,10 @@ module.exports = asyncHandler(async (req, res) => {
     }
   }
 
+  // The "items" parameter needs to be an array,
+  // and it needs to contain at least one item.
+  // The customer cannot place an order with
+  // no items in it.
   if (!Array.isArray(items) || items.length < 1) {
     res.status(400);
     res.json({
@@ -81,7 +93,12 @@ module.exports = asyncHandler(async (req, res) => {
     return;
   }
 
+  // This loop validate each individual item
+  // that the customer asked to purchase.
   for (const item of items) {
+    // The ID and the amount ordered should
+    // both be numbers, and the minimum amount
+    // ordered is 1
     if (
       typeof item?.part_id !== "number" ||
       typeof item?.amount_ordered !== "number" ||
@@ -96,6 +113,11 @@ module.exports = asyncHandler(async (req, res) => {
     }
 
     try {
+      // We now verify that the part(s) specified.
+      // We first check that they exist in the legacy database.
+      // Then we check that we have quantity information for
+      // those part(s) in our own database.
+
       const partInfo = await make_query(
         LEGACY_DB_INFO,
         `SELECT price,weight,description FROM parts WHERE number = ${item.part_id}`
@@ -114,12 +136,17 @@ module.exports = asyncHandler(async (req, res) => {
       const currStock = currStockQuery[0]?.quantity;
       if (typeof currStock !== "number") throw new Error();
 
+      // Accrue totals
       basePrice += partInfo[0].price * item.amount_ordered;
       weight += partInfo[0].weight * item.amount_ordered;
 
+      // Each order in our database has a one-to-many relationship
+      // with ordered_item. Here we're constructing a string to be
+      // part of an SQL query to create the ordered_items.
       orderedItemsStr += `('${transactionID}','${item.part_id}',
                            '${item.amount_ordered}','${partInfo[0].price}'),`;
 
+      // We're also constructing the html to make up the email content.
       emailContent += `<tr>
         <td align='right' width='300px'>${partInfo[0].description}</td>
         <td align='right' width='50px'>${item.amount_ordered}</td>
@@ -138,7 +165,11 @@ module.exports = asyncHandler(async (req, res) => {
     }
   }
 
+  // Validation has finished
   try {
+    // Determine shipping price. Pick the weight
+    // bracket with the lowest minimum_weight that
+    // is still higher than the weight of our order.
     const shippingPriceQuery = await make_query(
       OUR_DB_URL,
       `SELECT shipping_price FROM weight_brackets 
@@ -147,6 +178,7 @@ module.exports = asyncHandler(async (req, res) => {
        LIMIT 1`
     );
 
+    // If we don't find a weight bracket, default to 0
     if (shippingPriceQuery.length > 0) {
       shippingPrice = shippingPriceQuery[0].shipping_price;
     }
@@ -158,12 +190,15 @@ module.exports = asyncHandler(async (req, res) => {
     return;
   }
 
+  // Replace tailing comma with semicolon in our SQL query
   const finalItemsStr =
     orderedItemsStr.slice(0, orderedItemsStr.length - 1) + ";";
 
+  // Calculate total price
   const totalAmount = Math.round((basePrice + shippingPrice) * 100) / 100;
 
   try {
+    // Make a request to the payment processor
     const authResponse = await fetch("http://blitz.cs.niu.edu/CreditCard/", {
       method: "POST",
       headers: {
@@ -180,8 +215,11 @@ module.exports = asyncHandler(async (req, res) => {
       }),
     });
 
+    // Get the result from the payment processor
     const authResult = await authResponse.json();
 
+    // If the payment processor sent back errors,
+    // send those errors to the frontend
     if (authResult.errors) {
       res.status(400);
       res.json({
@@ -192,10 +230,15 @@ module.exports = asyncHandler(async (req, res) => {
       return;
     }
 
+    // Escape direct user input
     const cleanedName = SqlString.escape(name);
     const cleanedEmail = SqlString.escape(email);
     const cleanedAddress = SqlString.escape(address);
 
+    // Create the order.
+    // Keep track of the price they paid and the weight of the order
+    // when they made the purchase - the legacy database could change
+    // prices/weights later, and we don't want that to affect this order.
     await make_query(
       OUR_DB_URL,
       `INSERT INTO orders (
@@ -209,6 +252,8 @@ module.exports = asyncHandler(async (req, res) => {
       )`
     );
 
+    // Stores records of which items were ordered
+    // into the database. 
     await make_query(
       OUR_DB_URL,
       `INSERT INTO ordered_items (
@@ -216,6 +261,7 @@ module.exports = asyncHandler(async (req, res) => {
         ) VALUES ${finalItemsStr}`
     );
 
+    // Writes the "totals" section of the email.
     emailContent += `
       <tr>
         <td><br></td>
@@ -243,6 +289,8 @@ module.exports = asyncHandler(async (req, res) => {
       </tr>
     </table>`;
 
+    // If we have the email password configured,
+    // then send the email.
     if (dotenv.parsed.EMAIL_PASSWORD) {
       await send(email, emailContent, "Order Succeeded");
     }

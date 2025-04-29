@@ -65,6 +65,8 @@ module.exports = asyncHandler(async (req, res) => {
       : [];
 
     // Merges the parts with the quantities.
+    // We can't "JOIN" a query from our own DB with a query from the legacy DB,
+    // so we essentially have to do that with JavaScript.
     // Slightly inefficient because O(n^2), but this method guarantees success.
     const partsWithQuantities = parts.map((part) => ({
       ...part,

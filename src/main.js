@@ -418,14 +418,38 @@ document.addEventListener("DOMContentLoaded", () => {
                                     order.items.forEach(part => {
                                         const partTotal = Math.round(part.price * part.amount_ordered * 100) / 100;
                                         const strPartTotal = `$${partTotal.toFixed(2)}`;
-                                        invoice += `<tr><td align='right' width='300px'>${part.description}</td><td align='right' width='50px'>${part.amount_ordered}</td><td align='right' width='100px'>$${part.price.toFixed(2)}</td><td align='right' width='100px'>${strPartTotal}</td></tr>`;
+                                        invoice += `
+                                            <tr>
+                                                <td align='right' width='300px'>${part.description}</td>
+                                                <td align='right' width='50px'>${part.amount_ordered}</td>
+                                                <td align='right' width='100px'>$${part.price.toFixed(2)}</td>
+                                                <td align='right' width='100px'>${strPartTotal}</td>
+                                            </tr>`;
                                     });
 
-                                    invoice += `<tr><td><br></td></tr>`
-
-                                    invoice += `<tr><td></td><td></td><td align='right' width='100px'>Subtotal:</td><td align='right'>$${order.base_price.toFixed(2)}</td></tr>`;
-                                    invoice += `<tr><td></td><td></td><td align='right' width='100px'>Shipping:</td><td width='100px' align='right'>$${order.shipping_price.toFixed(2)}</td></tr>`;
-                                    invoice += `<tr><td></td><td></td><td align='right' width='100px'>Total:</td><td width='100px' align='right'>$${(order.base_price + order.shipping_price).toFixed(2)}</td></tr></table>`;
+                                    invoice += `
+                                        <tr>
+                                            <td><br></td>
+                                        </tr>
+                                        <tr>
+                                            <td></td>
+                                            <td></td>
+                                            <td align='right' width='100px'>Subtotal:</td>
+                                            <td align='right'>$${order.base_price.toFixed(2)}</td>
+                                        </tr>
+                                        <tr>
+                                            <td></td>
+                                            <td></td>
+                                            <td align='right' width='100px'>Shipping:</td>
+                                            <td width='100px' align='right'>$${order.shipping_price.toFixed(2)}</td>
+                                        </tr>
+                                        <tr>
+                                            <td></td>
+                                            <td></td>
+                                            <td align='right' width='100px'>Total:</td>
+                                            <td width='100px' align='right'>$${(order.base_price + order.shipping_price).toFixed(2)}</td>
+                                        </tr>
+                                    </table>`;
 
                                     const iframe = document.createElement('iframe');
                                     iframe.classList.add("hidden");
@@ -465,12 +489,26 @@ document.addEventListener("DOMContentLoaded", () => {
                                     `;
 
                                     order.items.forEach(part => {
-                                        packingList += `<tr><td align='right' width='300px'>${part.description}</td><td align='right' width='50px'>${part.amount_ordered}</td><td align='right' width='100px'>${part.weight} lbs</td><td align='right' width='100px'>${part.weight * part.amount_ordered} lbs</td></tr>`;
+                                        packingList += `
+                                            <tr>
+                                                <td align='right' width='300px'>${part.description}</td>
+                                                <td align='right' width='50px'>${part.amount_ordered}</td>
+                                                <td align='right' width='100px'>${part.weight} lbs</td>
+                                                <td align='right' width='100px'>${(part.weight * part.amount_ordered).toFixed(2)} lbs</td>
+                                            </tr>`;
                                     });
 
-                                    packingList += `<tr><td><br></td></tr>`
-
-                                    packingList += `<tr><td></td><td></td><td align='right' width='100px'>Total Weight:</td><td width='100px' align='right'>${order.total_weight} lbs</td></tr></table>`;
+                                    packingList += `
+                                        <tr>
+                                            <td><br></td>
+                                        </tr>
+                                        <tr>
+                                            <td></td>
+                                            <td></td>
+                                            <td align='right' width='100px'>Total Weight:</td>
+                                            <td width='100px' align='right'>${order.total_weight} lbs</td>
+                                        </tr>
+                                    </table>`;
 
                                     const iframe = document.createElement('iframe');
                                     iframe.classList.add("hidden");

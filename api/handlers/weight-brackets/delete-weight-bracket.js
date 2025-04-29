@@ -4,6 +4,8 @@ const { asyncHandler } = require("../../utils.js");
 const SqlString = require("sqlstring");
 
 // DELETE /api/weight-brackets/[weight-bracket-ID]
+// Deletes the weight bracket with the given ID.
+// Note that the ID is a surrogate key.
 module.exports = asyncHandler(async (req, res) => {
   try {
     const { weightBracketID } = req.params;

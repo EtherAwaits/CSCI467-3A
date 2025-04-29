@@ -36,8 +36,11 @@ module.exports = asyncHandler(async (req, res) => {
        WHERE number IN ${closedQueryStr}`
     );
 
+    // We can't JOIN the results from our own DB with the
+    // results from the legacy DB in SQL. So, we have
+    // to essentially do the same thing in JavaScript
     const mergedResults = ordersQuery.map((orderedItem) => {
-      // Again, inefficient because O(n^2), but it always works
+      // Inefficient because O(n^2), but it always works
       const part = partsQuery.find(
         (currPart) => currPart.number === orderedItem.part_id
       );

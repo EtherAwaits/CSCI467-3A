@@ -4,7 +4,8 @@ const { asyncHandler } = require("../../utils.js");
 const SqlString = require("sqlstring");
 
 // POST /api/weight-brackets
-// Creates a weight bracket
+// Creates a weight bracket.
+// Note that the minimum weight must be unique.
 module.exports = asyncHandler(async (req, res) => {
   try {
     const { minimum_weight, shipping_price } = req.body;

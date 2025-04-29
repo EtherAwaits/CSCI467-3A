@@ -15,6 +15,7 @@ module.exports = asyncHandler(async (req, res) => {
   let whereAlreadyPresent = false;
   let query = `SELECT * FROM orders`;
 
+  // Parse the status parameter
   if (status) {
     whereAlreadyPresent = true;
     switch (status.toLowerCase()) {
@@ -33,6 +34,7 @@ module.exports = asyncHandler(async (req, res) => {
     }
   }
 
+  // Parse the remaining parameters
   [lowDate, highDate, lowPrice, highPrice].forEach((param, i) => {
     if (param) {
       if (whereAlreadyPresent) {
