@@ -1,5 +1,6 @@
 const { OUR_DB_URL, make_query } = require("../../../db.js");
 const { asyncHandler } = require("../../utils.js");
+const SqlString = require("sqlstring");
 
 // GET /api/orders
 // Returns all of the orders in our database.
@@ -41,12 +42,16 @@ module.exports = asyncHandler(async (req, res) => {
         whereAlreadyPresent = true;
       }
 
+      const cleaned = SqlString.escape(param);
+
       if (i < 2) {
-        query += ` date_placed ${i > 0 ? "<=" : ">="} CONVERT_TZ('${param} ${i > 0 ? "23:59:59" : "00:00:00"}', '-05:00', '-10:00')`;
+        // Unfortunately this timezone conversion is necessary in order for the query to return the correct results.
+        // There's almost certainly a better way to handle this, but it's not immediately clear what that way is.
+        query += ` date_placed ${i > 0 ? "<=" : ">="} CONVERT_TZ(${cleaned.slice(0, cleaned.length - 1)} ${i > 0 ? "23:59:59" : "00:00:00"}', '-05:00', '-10:00')`;
       } else {
         query += ` (base_price + shipping_price) ${
           i > 2 ? "<=" : ">="
-        } '${param}'`;
+        } ${cleaned}`;
       }
     }
   });

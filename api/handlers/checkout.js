@@ -3,6 +3,7 @@ const { asyncHandler } = require("../utils.js");
 const uuid = require("uuid");
 const nodemailer = require("nodemailer");
 const dotenv = require("dotenv").config();
+const SqlString = require("sqlstring");
 
 const transporter = nodemailer.createTransport({
   host: "smtp.zoho.com",
@@ -17,7 +18,7 @@ const transporter = nodemailer.createTransport({
 const send = (to, content, subject) => {
   return new Promise((resolve, reject) => {
     if (!content)
-      return reject(new Error("fail because mail content was empty"));
+      return reject(new Error("cannot send email with no content"));
     const options = {
       from: "autoparts467@zohomail.com",
       to,
@@ -105,8 +106,8 @@ module.exports = asyncHandler(async (req, res) => {
         `SELECT * FROM part_quantities WHERE part_id = ${item.part_id}`
       );
 
-      // TODO: Eventually validate to ensure that we have enough in stock?
-      // I'm not sure that we actually want to check that, though.
+      // We could validate to ensure that we have enough in stock.
+      // However, I decided it isn't necessary to check for this.
       // In the use case diagram, I wrote that the quantity only gets
       // decreased when the warehouse worker ships something, rather
       // than when the customer makes a purchase.
@@ -191,6 +192,10 @@ module.exports = asyncHandler(async (req, res) => {
       return;
     }
 
+    const cleanedName = SqlString.escape(name);
+    const cleanedEmail = SqlString.escape(email);
+    const cleanedAddress = SqlString.escape(address);
+
     await make_query(
       OUR_DB_URL,
       `INSERT INTO orders (
@@ -198,8 +203,8 @@ module.exports = asyncHandler(async (req, res) => {
           mailing_address,authorization_number,
           base_price,shipping_price,total_weight
       ) VALUES (
-          '${transactionID}','${name}','${email}',
-         '${address}','${authResult.authorization}',
+          '${transactionID}',${cleanedName},${cleanedEmail},
+         ${cleanedAddress},'${authResult.authorization}',
           ${basePrice},${shippingPrice},${weight}
       )`
     );

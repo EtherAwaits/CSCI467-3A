@@ -1,6 +1,7 @@
 const { OUR_DB_URL, make_query } = require("../../../db.js");
 
 const { asyncHandler } = require("../../utils.js");
+const SqlString = require("sqlstring");
 
 // POST /api/weight-brackets
 // Creates a weight bracket
@@ -8,11 +9,14 @@ module.exports = asyncHandler(async (req, res) => {
   try {
     const { minimum_weight, shipping_price } = req.body;
 
+    const cleanedMinWeight = SqlString.escape(minimum_weight);
+    const cleanedShipPrice = SqlString.escape(shipping_price);
+
     await make_query(
       OUR_DB_URL,
       `INSERT INTO weight_brackets 
        (minimum_weight,shipping_price) VALUES
-       ('${minimum_weight}','${shipping_price}')`
+       (${cleanedMinWeight},${cleanedShipPrice})`
     );
 
     res.status(200);

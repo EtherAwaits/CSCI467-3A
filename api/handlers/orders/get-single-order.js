@@ -1,5 +1,6 @@
 const { OUR_DB_URL, LEGACY_DB_INFO, make_query } = require("../../../db.js");
 const { asyncHandler } = require("../../utils.js");
+const SqlString = require("sqlstring");
 
 // GET /api/orders/[orderID]
 // Returns the specific details of a single order,
@@ -7,12 +8,13 @@ const { asyncHandler } = require("../../utils.js");
 module.exports = asyncHandler(async (req, res) => {
   try {
     const { orderID } = req.params;
+    const cleanedOrderID = SqlString.escape(orderID)
 
     const ordersQuery = await make_query(
       OUR_DB_URL,
       `SELECT * FROM orders 
        JOIN ordered_items ON orders.order_id = ordered_items.order_id
-       WHERE orders.order_id = '${orderID}'`
+       WHERE orders.order_id = ${cleanedOrderID}`
     );
 
     if (ordersQuery.length < 1) {

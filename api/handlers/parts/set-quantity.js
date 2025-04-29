@@ -1,5 +1,6 @@
 const { OUR_DB_URL, make_query } = require("../../../db.js");
 const { asyncHandler } = require("../../utils.js");
+const SqlString = require("sqlstring");
 
 //
 // POST /api/parts/[partID]
@@ -11,11 +12,14 @@ module.exports = asyncHandler(async (req, res) => {
     const { partID } = req.params;
     const { quantity } = req.body;
 
+    const cleanedPartID = SqlString.escape(partID);
+    const cleanedQuantity = SqlString.escape(quantity);
+
     await make_query(
       OUR_DB_URL,
       `INSERT INTO part_quantities (part_id,quantity) 
-           VALUES ('${partID}','${quantity}') 
-           ON DUPLICATE KEY UPDATE quantity = '${quantity}'`
+           VALUES (${cleanedPartID},${cleanedQuantity}) 
+           ON DUPLICATE KEY UPDATE quantity = ${cleanedQuantity}`
     );
 
     res.status(200);
