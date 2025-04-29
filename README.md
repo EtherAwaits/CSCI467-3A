@@ -12,7 +12,7 @@
 - [Contributors](#contributors)
 - [Project Overview: Ege Auto Parts](#project-overview-ege-auto-parts)
 - [Tech Stack](#tech-stack)
-- [Application Screenshots](#screenshots)
+- [Screenshots](#screenshots)
 - [Assignment Description](#assignment-description)
 - [Database Connection Documentation](#database-connection-documentation)
 
