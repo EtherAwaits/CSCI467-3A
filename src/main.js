@@ -317,11 +317,12 @@ document.addEventListener("DOMContentLoaded", () => {
                     
                     <table class="table table-fixed w-full my-4">
                         <thead>
-                            <tr class="theader grid-cols-5">
+                            <tr class="theader grid-cols-6">
                                 <th class="">Order ID</th>
                                 <th class="">Customer</th>
                                 <th class="">Total</th>
                                 <th class="">Weight</th>
+                                <th class=""></th>
                                 <th class=""></th>
                             </tr>
                         </thead>
@@ -339,25 +340,24 @@ document.addEventListener("DOMContentLoaded", () => {
                         const orderCount = document.getElementById("order-count");
                         productList.innerHTML = orders.map(orders => `
                             <tr class="tcontent">
-                            <div>
+                            
                                 <td class="">${orders.order_id}</b></td>
                                 <td class=""><b>${orders.customer_name}</b></td>
                                 <td class="">$${(orders.base_price + orders.shipping_price).toFixed(2)}</td>
-                                <td class="">${orders.total_weight.toFixed(2)} lbs</td>
-                                <td class="grid grid-cols-2">
-                                    <button class="btn-form" id="complete-${orders.order_id}" num="${orders.order_id}">Complete</button>
-                                    <button class="btn text-white bg-secondary hover:bg-accent hover:border-accent hover:border-single hover:border-2 hover:shadow-lg hover:shadow-accent/50 p-2" id="invoice-${orders.order_id}" num="${orders.order_id}">Print Invoice</button>
-                                    <button class="btn text-white bg-secondary hover:bg-accent hover:border-accent hover:border-single hover:border-2 hover:shadow-lg hover:shadow-accent/50 p-2" id="packing-list-${orders.order_id}" num="${orders.order_id}">Print Packing List</button>
-                                    <button class="btn text-white bg-secondary hover:bg-accent hover:border-accent hover:border-single hover:border-2 hover:shadow-lg hover:shadow-accent/50 p-2" id="label-${orders.order_id}" num="${orders.order_id}">Print Shipping Label</button>
-                                <div>
-                                <td class="">
-                                    <button class="btn-form" id="complete-${orders.order_id}" num="${orders.order_id}">Complete</button>
-
-                                    <button class="btn text-white bg-secondary hover:bg-accent hover:border-accent hover:border-single hover:border-2 hover:shadow-lg hover:shadow-accent/50 p-2" id="invoice-${orders.order_id}" num="${orders.order_id}">Invoice</button>
-
-                                    <button class="btn text-white bg-secondary hover:bg-accent hover:border-accent hover:border-single hover:border-2 hover:shadow-lg hover:shadow-accent/50 p-2" id="packing-list-${orders.order_id}" num="${orders.order_id}">Packing List</button>
+                                <td class="">${orders.total_weight.toFixed(2)} lbs</div>
                                 </td>
-                            </div>
+                                <td class="" colspan="2">
+                                    <div class="min-w-max">
+                                        <button class="btn-form" id="complete-${orders.order_id}" num="${orders.order_id}">Complete</button>
+
+                                        <button class="btn text-white bg-secondary hover:bg-accent hover:border-accent hover:border-single hover:border-2 hover:shadow-lg hover:shadow-accent/50 p-2" id="invoice-${orders.order_id}" num="${orders.order_id}">Invoice</button>
+
+                                        <button class="btn text-white bg-secondary hover:bg-accent hover:border-accent hover:border-single hover:border-2 hover:shadow-lg hover:shadow-accent/50 p-2" id="packing-list-${orders.order_id}" num="${orders.order_id}">Packing List</button>
+
+                                        <button class="btn text-white bg-secondary hover:bg-accent hover:border-accent hover:border-single hover:border-2 hover:shadow-lg hover:shadow-accent/50 p-2" id="label-${orders.order_id}" num="${orders.order_id}">Shipping Label</button>
+                                    </div>
+                                </td>
+                            
                             </tr>
                         `).join("");
 
