@@ -206,7 +206,7 @@ module.exports = asyncHandler(async (req, res) => {
         "Content-Type": "application/json",
       },
       body: JSON.stringify({
-        vendor: "Auto Parts",
+        vendor: "Ege Auto Parts",
         trans: transactionID,
         cc,
         name,
